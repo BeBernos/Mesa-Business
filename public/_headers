@@ -1,0 +1,3 @@
+# Só o próprio app e o Pulse (app de treino, endereço novo e antigo) podem abrir a Mesa dentro de uma moldura (iframe).
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://pulse.example.workers.dev https://app-treino.example.workers.dev

@@ -1,0 +1,29 @@
+{
+  "name": "Mesa",
+  "short_name": "Mesa",
+  "description": "Mesa: a dieta da família — refeições do dia, lembretes, compras e saúde, sincronizados.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141416",
+  "theme_color": "#141416",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [{ "name": "plan", "accept": ["application/json", ".json", "text/plain", ".txt", "text/html", ".html"] }]
+    }
+  },
+  "shortcuts": [
+    { "name": "Subir plano novo", "short_name": "Subir plano", "url": "/?upload=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

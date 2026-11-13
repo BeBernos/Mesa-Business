@@ -1,0 +1,112 @@
+{
+  "formato": "plano-familia/2",
+  "titulo": "Novembro 2026",
+  "subtitulo": "Ciclo 4 · recomposição",
+  "inicio": "2026-10-26",
+  "fim": "2026-10-27",
+  "pessoas": [
+    {
+      "id": "rafael", "nome": "Rafael",
+      "resumo": "Recompor sem forçar comida",
+      "detalhe": "2.400 treino / 2.200 descanso · 150g de proteína",
+      "metas": { "kcal": { "T": 2400, "D": 2200, "X": 2400 }, "proteina": 150, "agua": 3000 },
+      "peso": { "atual": 83.8, "data": "2026-10-17", "meta": "83–84 kg", "historico": [["2026-09-20", 84.2], ["2026-10-17", 83.8]] },
+      "suplementos": ["Ômega 3 2×/dia", "Creatina 5g/dia"]
+    },
+    {
+      "id": "marina", "nome": "Marina",
+      "resumo": "Perda gradual com saciedade",
+      "metas": { "kcal": { "T": 1600, "D": 1500 }, "proteina": 105 },
+      "peso": { "atual": 69.0, "data": "2026-10-17", "meta": "65 kg" }
+    },
+    {
+      "id": "theo", "nome": "Theo",
+      "resumo": "3 anos · mesma comida da família",
+      "metas": { "kcal": 1300, "proteina": 45 },
+      "restricoes": ["Alergia a ovo — utensílios separados"]
+    }
+  ],
+  "tiposDeDia": { "T": "Treino", "D": "Descanso", "X": "Treino 5h" },
+  "conversoes": { "Arroz": 2.5, "Feijão": 2.2, "Macarrão": 2.2 },
+  "modelos": {
+    "shake-banana": {
+      "nome": "Café da manhã", "titulo": "Shake de banana com aveia",
+      "kcal": 531, "proteina": 43,
+      "itens": [["Whey Protein", 30, "g"], ["Leite zero lactose desnatado", 250, "ml"], ["Banana", 100, "g"], ["Aveia", 30, "g"], ["Pasta de amendoim", 20, "g"]]
+    },
+    "shake-morango": {
+      "nome": "Café da manhã", "titulo": "Shake de morango",
+      "kcal": 505, "proteina": 44,
+      "itens": [["Whey Protein", 30, "g"], ["Leite zero lactose desnatado", 250, "ml"], ["Morango", 150, "g"], ["Aveia", 35, "g"], ["Pasta de amendoim", 20, "g"]]
+    },
+    "lanche-kiwi": {
+      "nome": "Lanche da tarde", "titulo": "Iogurte com kiwi",
+      "kcal": 396, "proteina": 28,
+      "itens": [["Iogurte caseiro", 200, "g"], ["Kiwi", 150, "g"], ["Castanhas", 25, "g"], ["Whey Protein", 20, "g"]]
+    }
+  },
+  "dias": [
+    {
+      "data": "2026-10-26",
+      "tipo": { "rafael": "T", "marina": "T", "theo": "T" },
+      "contexto": "Treino ~11h · em casa",
+      "preparo": ["Tempere o frango com sal, limão e ervas.", "Grelhe 4–5 min de cada lado; descanse 2 min antes de fatiar."],
+      "seNaoTreinar": { "marina": "Sem treino hoje: tire 25g cru de arroz do jantar." },
+      "refeicoes": {
+        "rafael": [
+          { "hora": "07:00", "modelo": "shake-banana", "alternativas": ["shake-morango"] },
+          { "hora": "13:00", "nome": "Almoço", "titulo": "Peito de frango grelhado", "familia": true, "kcal": 704, "proteina": 54,
+            "itens": [["Peito de frango", 100, "g"], { "nome": "Arroz", "qtd": 80, "unid": "g", "kcal": 288, "proteina": 6 }, ["Feijão", 20, "g"], ["Salada (folhas)", 80, "g"], ["Azeite", 15, "ml"]],
+            "nota": "Inclui o shake pós-treino" },
+          { "hora": "17:00", "modelo": "lanche-kiwi" },
+          { "hora": "20:30", "nome": "Jantar", "titulo": "Patinho refogado", "familia": true, "kcal": 530, "proteina": 25,
+            "itens": [["Patinho", 90, "g"], ["Arroz", 70, "g"], ["Cenoura", 80, "g"], ["Azeite", 15, "ml"]] }
+        ],
+        "marina": [
+          { "hora": "07:30", "nome": "Café da manhã", "titulo": "Toddy com tapioca", "kcal": 429, "proteina": 30,
+            "itens": [["Leite desnatado", 250, "ml"], ["Toddy", 20, "g"], ["Tapioca (goma)", 45, "g"], ["Requeijão light", 35, "g"]] },
+          { "hora": "12:30", "nome": "Almoço", "titulo": "Peito de frango grelhado", "familia": true, "kcal": 462, "proteina": 27,
+            "itens": [["Peito de frango", 80, "g"], ["Arroz", 60, "g"], ["Feijão", 20, "g"], ["Salada (folhas)", 100, "g"], ["Azeite", 8, "ml"]] },
+          { "hora": "20:00", "nome": "Jantar", "titulo": "Patinho refogado", "familia": true, "kcal": 368, "proteina": 20,
+            "itens": [["Patinho", 70, "g"], ["Arroz", 50, "g"], ["Cenoura", 100, "g"], ["Azeite", 7, "ml"]] }
+        ],
+        "theo": [
+          { "hora": "12:00", "nome": "Almoço", "titulo": "Peito de frango grelhado", "familia": true, "kcal": 278, "proteina": 16,
+            "itens": [["Peito de frango", 50, "g"], ["Arroz", 30, "g"], ["Feijão", 15, "g"], ["Cenoura", 50, "g"], ["Azeite", 5, "ml"]] }
+        ]
+      }
+    },
+    {
+      "data": "2026-10-27",
+      "tipo": "D",
+      "contexto": "Descanso · escritório",
+      "avisos": [{ "pessoa": "rafael", "tom": "alerta", "titulo": "Teste · Alho fresco · dose 1/3", "texto": "Hoje entra **alho fresco 2g** no tempero do jantar." }],
+      "refeicoes": {
+        "rafael": [
+          { "hora": "07:00", "modelo": "shake-banana" },
+          { "hora": "12:30", "nome": "Almoço", "titulo": "Marmita de carne moída", "kcal": 690, "proteina": 50,
+            "itens": [["Patinho moído", 100, "g"], ["Arroz", 75, "g"], ["Feijão", 20, "g"], ["Abobrinha", 80, "g"], ["Azeite", 12, "ml"]] },
+          { "hora": "20:30", "nome": "Jantar", "titulo": "Frango grelhado com alho", "familia": true, "kcal": 520, "proteina": 30,
+            "itens": [["Peito de frango", 90, "g"], ["Arroz", 65, "g"], ["Abobrinha", 80, "g"], ["Azeite", 12, "ml"], ["Alho fresco (teste)", 2, "g"]] }
+        ]
+      }
+    }
+  ],
+  "lotes": [{ "titulo": "Domingo · preparo em lote", "quando": "DOM", "passos": ["Cozinhe arroz e feijão da semana.", "Asse frango a mais para os lanches."] }],
+  "compras": {
+    "categorias": { "Peito de frango": "Açougue", "Patinho": "Açougue", "Patinho moído": "Açougue", "Arroz": "Mercearia", "Feijão": "Mercearia", "Kiwi": "Hortifruti", "Cenoura": "Hortifruti", "Iogurte caseiro": "Laticínios" },
+    "feitoEmCasa": { "Iogurte caseiro": [["Leite zero lactose desnatado", 1, "ml"], ["Fermento lácteo (iogurte)", 0.001, "un"]] },
+    "porDia": [{ "pessoa": "rafael", "item": ["Ômega 3", 2, "un"] }],
+    "observacoes": ["Tudo em peso **cru**."]
+  },
+  "testes": [
+    { "pessoa": "rafael", "grupo": "Frutano (alho)", "alimento": "Alho fresco",
+      "doses": [{ "data": "2026-10-27", "quantidade": "2g", "refeicao": "Jantar", "texto": "alho fresco 2g no tempero do jantar" }],
+      "criterio": "**Passou:** 3 dias sem sintoma ou só gás leve. **Não passou:** sintoma moderado ou forte." }
+  ],
+  "regras": ["**Pese sempre cru.** O peso pronto aparece ao lado de cada item."],
+  "notas": [
+    { "secao": "saude", "pessoa": "rafael", "tom": "alerta", "titulo": "Quando procurar médico", "texto": "Sangue nas fezes, febre, dor forte ou perda de peso sem querer: **consulta**, não ajuste de cardápio." },
+    { "secao": "plano", "tom": "info", "titulo": "Por que a meta mudou", "texto": "O peso ficou estável em 2.700 kcal — era manutenção.\n\nAgora: **2.400 treino / 2.200 descanso**." }
+  ]
+}

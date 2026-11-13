@@ -1,0 +1,16 @@
+{
+  "name": "plano-familia",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.mjs",
+    "icons": "node scripts/gerar-icones.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Mesa — family nutrition plan PWA on Cloudflare Workers, planned by AI through an MCP connector."
+}

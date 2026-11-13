@@ -1,0 +1,31 @@
+Copyright (c) 2026 BeBernos (https://github.com/BeBernos). All rights reserved.
+
+SOURCE-AVAILABLE LICENSE — VIEWING AND EVALUATION ONLY
+
+The source code, documentation, images and other files in this repository (the "Software") are
+published so that they can be read and evaluated. Publication does not grant any license.
+
+You MAY:
+  - view and read the Software on GitHub;
+  - run it privately, for a limited time, solely to evaluate it.
+
+You MAY NOT, without prior written permission from the copyright holder:
+  - use the Software, in whole or in part, in production or for any commercial purpose;
+  - copy, modify, merge, publish, distribute, sublicense or sell copies of the Software;
+  - offer the Software, or any work derived from it, as a hosted service.
+
+COMMERCIAL LICENSING
+Commercial licenses (including white-label and custom deployments) are available.
+Contact the copyright holder through https://github.com/BeBernos.
+
+Third-party components keep their own licenses (for example, the Lucide icon set under
+public/img/LICENSE-lucide.txt, where present).
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE.
+
+---------------------------------------------------------------------------------------------------
+Resumo em português: código publicado apenas para leitura e avaliação. Uso em produção, uso
+comercial, cópia, modificação ou redistribuição exigem autorização por escrito. Licenças comerciais
+(inclusive white-label) disponíveis — contato pelo GitHub (https://github.com/BeBernos).

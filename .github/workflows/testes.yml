@@ -1,0 +1,38 @@
+# Testes da Mesa a cada PR (e na main): npm test + os dois ponta a ponta, cada um com o estado do wrangler dev zerado.
+name: Testes
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Navegador para o ponta a ponta
+        run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - name: Ponta a ponta
+        run: |
+          echo "APP_PASSWORD=teste-local-123" > .dev.vars
+          mkdir -p shots
+          sobe() { npx wrangler dev --port $1 --ip 127.0.0.1 --persist-to "$RUNNER_TEMP/estado-$1" > "shots/wrangler-$1.log" 2>&1 &
+            for i in $(seq 1 90); do curl -sf -o /dev/null "http://127.0.0.1:$1/" && return 0; sleep 1; done; cat "shots/wrangler-$1.log"; return 1; }
+          sobe 8787
+          SHOTS=shots node test/e2e.mesa.mjs http://localhost:8787
+          sobe 8788
+          SHOTS=shots node test/e2e.browser.mjs shots/plano-teste.json http://localhost:8788
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prints-e-logs
+          path: shots/
+          retention-days: 7

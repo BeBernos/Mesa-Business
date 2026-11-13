@@ -1,0 +1,30 @@
+{
+  // Plano da Família — Worker + arquivos estáticos + KV + cron (Cloudflare Workers)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plano-familia",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+
+  // public/ é servido como arquivos estáticos; o que não existir lá (/api/*, /p/*) cai no Worker
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+
+  // Sem "id": o primeiro `wrangler deploy` cria o namespace sozinho e o liga ao Worker.
+  // (Se preferir criar à mão: `npx wrangler kv namespace create plano-familia` e cole o id aqui.)
+  "kv_namespaces": [{ "binding": "KV" }],
+
+  // Banco SQLite (D1) para o que os celulares compartilham: refeições feitas, compras, peso, sintomas.
+  // Também é criado sozinho no deploy. A tabela é criada pelo próprio Worker na primeira vez.
+  "d1_databases": [{ "binding": "DB", "database_name": "plano-familia" }],
+
+  // A cada minuto: confere quem precisa ser avisado agora
+  "triggers": { "crons": ["* * * * *"] },
+
+  "vars": {
+    "TZ": "America/Sao_Paulo",
+    // Contato exigido pelo padrão Web Push (não aparece para ninguém). Troque pelo seu e-mail.
+    "VAPID_SUBJECT": "mailto:familia@example.com"
+  },
+
+  "observability": { "enabled": true }
+  // Segredo obrigatório (NÃO coloque aqui): APP_PASSWORD → `npx wrangler secret put APP_PASSWORD`
+}
