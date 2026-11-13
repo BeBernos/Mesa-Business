@@ -1,149 +1,118 @@
-<p align="center"><img src="public/img/logo.svg" width="96" alt="Logo da Mesa"></p>
-
-<h1 align="center">Mesa</h1>
-<p align="center"><b>O plano alimentar da família em todos os celulares — montado por IA, seguido na vida real.</b></p>
+<p align="center"><img src="docs/images/capa.png" alt="Mesa — plano alimentar da família" width="100%"></p>
 
 <p align="center">
-  <a href="README.md">🇺🇸 Read in English</a> ·
-  <a href="#demonstração">Demonstração</a> ·
-  <a href="#arquitetura">Arquitetura</a> ·
-  <a href="#uso-comercial">Uso comercial</a>
+  <a href="https://bebernos.github.io/Mesa-Business/"><b>▶ Demonstração ao vivo</b></a> ·
+  <a href="README.md">Read in English</a> ·
+  <a href="#como-funciona">Arquitetura</a> ·
+  <a href="SECURITY.md">Segurança</a> ·
+  <a href="docs/case-study.pt-BR.md">Estudo de caso</a>
 </p>
 
 <p align="center">
   <img alt="Testes" src="https://github.com/BeBernos/Mesa-Business/actions/workflows/testes.yml/badge.svg">
-  <img alt="PWA" src="https://img.shields.io/badge/PWA-instal%C3%A1vel-4263EB">
-  <img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers%20%C2%B7%20D1%20%C2%B7%20KV-F38020">
-  <img alt="Sem dependências" src="https://img.shields.io/badge/frontend-sem%20depend%C3%AAncias-7E1C55">
-  <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-c%C3%B3digo%20vis%C3%ADvel-555">
+  <img alt="Demonstração" src="https://github.com/BeBernos/Mesa-Business/actions/workflows/pages.yml/badge.svg">
 </p>
 
----
+# Mesa
 
-A Mesa transforma o plano alimentar do mês num app vivo e compartilhado pela casa. Cada pessoa vê as próprias refeições,
-porções e metas; a família vê uma lista de compras só; e o plano do mês seguinte é escrito por um assistente de IA que lê
-como o mês realmente foi — o que foi comido, pulado, trocado e como as pessoas se sentiram.
+**A Mesa transforma o plano alimentar do mês num app compartilhado pela casa — cada pessoa vê as próprias refeições e
+metas, a família divide uma lista de compras só, e o plano do mês seguinte é escrito por uma IA (o Claude) que lê como o
+mês realmente foi.**
 
-> Todos os dados deste repositório e das imagens são fictícios (família de demonstração: Rafael, Marina e Theo).
+Foi feita para uma família de verdade e é usada todo dia desde outubro de 2026: dois adultos e uma criança em três
+planos diferentes, dois celulares, uma cozinha. Dez versões depois, ela também conversa com o app de treino da família
+(Pulse) e com o de mercado (Cesta).
 
-## Demonstração
-
-<p align="center"><img src="docs/images/demo.gif" width="300" alt="Demonstração da Mesa: hoje, opções de refeição, compras, saúde"></p>
-
-| Hoje | Refeição e opções | Painel do plano | Compras |
-|---|---|---|---|
-| <img src="docs/images/02-hoje.png" width="200"> | <img src="docs/images/03-refeicao.png" width="200"> | <img src="docs/images/04-semana.png" width="200"> | <img src="docs/images/05-compras.png" width="200"> |
-
-| Saúde e feedback | Ajustes | Modo escuro | Entrada |
-|---|---|---|---|
-| <img src="docs/images/06-saude.png" width="200"> | <img src="docs/images/07-ajustes.png" width="200"> | <img src="docs/images/08-hoje-escuro.png" width="200"> | <img src="docs/images/01-login.png" width="200"> |
-
-**No computador** — a ficha da refeição fica ao lado da linha do tempo:
-
-<img src="docs/images/09-computador.png" alt="Mesa no computador">
+> A demonstração ao vivo usa uma **família fictícia** (Rafael, Marina e Theo) e um plano de duas semanas que sempre
+> acompanha a data de hoje. Tudo acontece no seu navegador — a API do servidor é simulada, nada é enviado.
 
 ## O que faz
 
-**No dia a dia**
-- Linha do tempo por pessoa: refeições, porções (peso cru e pronto), anel de kcal/proteína contra a meta do dia.
-- Um toque marca a refeição como feita (com desfazer); dá para marcar só *parte* da refeição ou "comi outra coisa" — as calorias se ajustam.
-- Opções de refeição: troque o café de hoje pela opção 2 ou 3; os totais e a lista de compras acompanham.
-- Água, busca ("quando tem frango este mês?"), deslizar entre dias, puxar para atualizar, fila offline.
-- Visão da criança: "comeu bem / pouco / recusou" em vez de calorias, alergias sempre à vista.
+| | | | |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/images/02-hoje.png" width="200"><br>**O dia num relance** | <img src="docs/images/03-refeicao.png" width="200"><br>**Refeição, opções, "comi só parte"** | <img src="docs/images/04-semana.png" width="200"><br>**O plano está funcionando?** | <img src="docs/images/05-compras.png" width="200"><br>**Uma lista, sincronizada, com custo** |
+| <img src="docs/images/06-saude.png" width="200"><br>**Check-in, peso, sintomas** | <img src="docs/images/07-ajustes.png" width="200"><br>**Ajustes por assunto** | <img src="docs/images/08-hoje-claro.png" width="200"><br>**Claro e escuro** | <img src="docs/images/01-login.png" width="200"><br>**Senha da família + passkey** |
 
-**Planejamento e casa**
-- Lista de compras compartilhada por semana ou do plano inteiro, sincronizada entre os celulares no mercado; "já tenho em casa".
-- Preparo em lote: totais da semana (cru e pronto) e temporizadores no modo cozinha; cardápio + lista para imprimir.
-- Painel do plano: adesão por semana, média comida contra a meta, peso, hidratação.
-- Custo da dieta por semana, com os preços pesquisados no app de mercado ([Cesta](https://github.com/BeBernos/Cesta-Business)).
+<p align="center"><img src="docs/images/demo.gif" width="300" alt="Mesa: trocar a opção, marcar como comida, água, painel da semana, compras"><br>
+<i>Troca o café de hoje pela opção 2, marca como comido, anota a água — o anel, o painel da semana e a lista de compras acompanham.</i></p>
 
-**Saúde**
-- Check-in diário (energia, fome, intestino) e fechamento da semana — a matéria-prima do próximo plano.
-- Diário de sintomas com o cruzamento **comida × sintoma**.
-- Testes de reintrodução guiados (ex.: FODMAP): aviso no dia da dose, perguntas de acompanhamento, resultado por alimento, histórico.
-- Notificações proativas que perguntam em vez de insistir (no máximo 2 por dia, respondidas na própria notificação).
+- **No dia a dia** — linha do tempo por pessoa com porções em peso cru e pronto, anel de kcal/proteína contra a meta do
+  dia, um toque para marcar a refeição (com desfazer), "comi só parte" ou "comi outra coisa" com as calorias reestimadas,
+  água, busca, deslizar entre dias, fila offline.
+- **Na casa** — uma lista de compras por semana (ou do plano inteiro) dividida entre os celulares no mercado, "já tenho em
+  casa", totais do preparo em lote com temporizadores, cardápio da semana para imprimir e o **custo** da semana com os
+  preços do app de mercado.
+- **Saúde** — check-in diário (energia, fome, intestino), fechamento da semana, diário de sintomas com o cruzamento
+  **comida × sintoma**, testes de reintrodução guiados (FODMAP) com lembretes e histórico, e a visão da criança ("comeu bem
+  / pouco / recusou") no lugar das calorias.
+- **Um app proativo** — avisos na hora da refeição que pulam o que já foi comido, e até duas perguntas por dia ("Alguma
+  reação ao alho?") respondidas na própria notificação.
+- **IA onde ela acrescenta julgamento** — o Claude lê o mês (adesão, sobras, trocas, sintomas, peso, treino, custo) por um
+  **conector MCP**, rascunha o próximo plano em partes, valida, mostra um resumo e só publica depois que o usuário confirma.
+  Sem API paga: roda na assinatura do Claude do próprio usuário.
 
-**Plano montado por IA, sem API paga**
-- Um **conector MCP** (Model Context Protocol) deixa a assinatura do Claude do próprio usuário ler o contexto da família e
-  publicar o plano do mês seguinte: rascunho em partes, validação, resumo e publicação só depois da confirmação.
-- O plano é um contrato JSON documentado ([`docs/PROMPT-DIETA.md`](docs/PROMPT-DIETA.md), exemplo em
-  [`docs/exemplo-plano.json`](docs/exemplo-plano.json)), validado no servidor e no aparelho.
+## Como funciona
 
-**Integrações**
-- [Pulse](https://github.com/BeBernos/Pulse-Business) (treino): peso oficial, "treinou hoje?", gasto do cardio e a agenda de treino
-  (dia de treino ou descanso, horário do pré/pós-treino) por uma ligação privada entre Workers.
-- [Cesta](https://github.com/BeBernos/Cesta-Business) (preços de mercado): traz a lista de compras da dieta e devolve os preços.
+<p align="center"><img src="docs/images/architecture-pt.svg" alt="Diagrama da arquitetura" width="100%"></p>
 
-## Arquitetura
+O diferente: **o plano é um contrato, não uma tela.** A IA escreve num formato JSON documentado
+([`docs/PROMPT-DIETA.md`](docs/PROMPT-DIETA.md), exemplo em [`docs/exemplo-plano.json`](docs/exemplo-plano.json)); um
+módulo só ([`public/js/plan.js`](public/js/plan.js)) valida e interpreta **no celular e no servidor** — opções de
+refeição, estimativa de refeição parcial, lista de compras, lote, custo, a análise comida × sintoma. O app nunca tem uma
+dieta fixa no código: um mês novo é um JSON novo, e os celulares da família são avisados na hora em que ele é publicado.
 
-```mermaid
-flowchart LR
-  subgraph Phones["Celulares e computador (PWA)"]
-    UI["App em JavaScript puro<br/>offline · push"]
-  end
-  subgraph CF["Cloudflare Worker: plano-familia"]
-    API["/api/* · login · passkeys"]
-    CRON["Cron (a cada minuto)<br/>avisos · perguntas proativas"]
-    MCP["/mcp/&lt;token&gt;<br/>servidor MCP"]
-    D1[("D1 (SQLite)<br/>registro · planos")]
-    KV[("KV<br/>aparelhos · agenda")]
-  end
-  Claude["Claude (assinatura do usuário)"]
-  Pulse["Worker do Pulse<br/>(treino)"]
-  Cesta["Worker da Cesta<br/>(preços)"]
-  UI <--> API
-  API --- D1
-  API --- KV
-  CRON --> UI
-  Claude <--> MCP
-  Pulse <-->|service binding| API
-  Cesta <-->|service binding| API
-```
+Cada interação é um evento num registro compartilhado (refeição comida, item comprado, peso, sintoma…) guardado no
+Cloudflare D1, com sincronização "vence a última gravação" e fila offline em cada celular. Os outros dois Workers (treino e
+mercado) falam com a Mesa por ligações privadas entre Workers — nada de endereço público.
 
-- **Frontend:** PWA em módulos de JavaScript puro — sem framework, sem build, sem dependências. Service worker com shell
-  offline, planos em cache e Web Push (botões na notificação: "Comi", "15 min", respostas às perguntas).
-- **Backend:** um único Worker do Cloudflare — arquivos estáticos, API REST, cron e servidor MCP. O **D1** guarda o registro
-  compartilhado (refeições, compras, peso, sintomas, testes…) com sincronização "vence a última gravação"; o **KV** guarda
-  aparelhos e a agenda dos avisos.
-- **Web Push do zero:** VAPID (ES256) e criptografia `aes128gcm` (RFC 8291) com WebCrypto.
-- **Segurança:** cookie do aparelho + sessão de 4 horas renovável, tela de bloqueio com **passkeys** (WebAuthn conferido no
-  servidor), checagem de `Origin` nas gravações, `frame-ancestors` restrito ao app parceiro, conector MCP atrás de um segredo
-  que pode ser trocado.
-- **Motor do plano:** um módulo só ([`public/js/plan.js`](public/js/plan.js)) usado no navegador e no Worker: validação,
-  opções de refeição (inclusive deduzidas do rodízio), estimativa de refeição parcial, lista de compras, lote, custo e análises.
+## Segurança
 
-## Qualidade
+Senha da família uma vez por aparelho, depois uma sessão de 4 horas que se renova; passado isso, o app trava e pede a
+**passkey** (WebAuthn conferido no servidor) — e os botões das notificações continuam funcionando. Gravações conferem a
+`Origin`, o app só pode ser aberto dentro do app de treino parceiro, e o conector MCP fica atrás de um segredo que pode ser
+trocado. Detalhes em [SECURITY.md](SECURITY.md).
 
-- `npm test` — test runner nativo do Node contra o código real do Worker (KV em memória, D1 sobre `node:sqlite`, um celular
-  de mentira que decifra o Web Push de verdade, conferência de assinatura WebAuthn).
-- Duas suítes de ponta a ponta com Playwright contra o `wrangler dev` (autenticador virtual para passkeys, modo offline,
-  gestos, fonte grande a 280 px, layout de computador).
-- As duas rodam em todo pull request ([`.github/workflows/testes.yml`](.github/workflows/testes.yml)).
+## Destaques de engenharia
 
-## Rodar localmente
+- **Sem framework, sem build, sem dependências.** Módulos ES puros, ícones desenhados num sprite próprio e um sistema
+  visual em tokens de CSS.
+- **Web Push do zero** — VAPID (ES256) e criptografia `aes128gcm` (RFC 8291) com WebCrypto, conferidos nos testes por um
+  celular de mentira que decifra as mensagens de verdade.
+- **Um motor, dois ambientes** — o mesmo módulo do plano roda no navegador e no Worker, então o servidor sabe responder "o
+  que tem no almoço?" para a IA e para o cron.
+- **Testado como produto** — 27 testes do Worker e do motor no test runner do Node (KV em memória, D1 sobre `node:sqlite`)
+  e duas suítes de ponta a ponta com Playwright (passkey com autenticador virtual, offline, gestos, fonte grande a 280 px,
+  computador). Tudo roda a cada pull request.
+- **Acessível** — rótulos para leitor de tela nos botões só com ícone, telas conferidas com a fonte grande do Android,
+  nenhum estado só por cor.
 
-```bash
-npm install
-echo "APP_PASSWORD=escolha-uma-senha" > .dev.vars
-npm run dev                         # http://localhost:8787
-npm test                            # testes de unidade e do Worker
-SHOTS=prints node test/e2e.mesa.mjs # ponta a ponta (precisa do Playwright e do estado do wrangler zerado)
-```
+## Tecnologias
 
-Para publicar, basta uma conta do Cloudflare (plano grátis): `wrangler deploy` cria o Worker; KV e D1 estão declarados no
-[`wrangler.jsonc`](wrangler.jsonc).
+JavaScript (ES2023, sem framework) · HTML/CSS · Service Worker · Web Push (VAPID, RFC 8291) · WebAuthn · Cloudflare Workers ·
+D1 · KV · Cron Triggers · Model Context Protocol (MCP) · Claude · Playwright · test runner do Node
 
-## Uso comercial
+## Para ler mais
 
-Este repositório tem **código visível, mas não é open source**: dá para ler e avaliar o código, mas uso em produção ou
-comercial exige licença. Há licenças para **implantações white-label** (nutricionistas, clínicas, serviços de cardápio,
-bem-estar corporativo) e para desenvolvimento sob medida. Veja a [LICENSE](LICENSE) e fale comigo pelo
-[github.com/BeBernos](https://github.com/BeBernos).
+- [Estudo de caso](docs/case-study.pt-BR.md) — o problema, as decisões e o que saiu delas.
+- [Segurança](SECURITY.md) — modelo de ameaças e como cada camada funciona.
+- [Formato do plano](docs/PROMPT-DIETA.md) — o contrato JSON entre a IA e o app.
 
-## Faz parte de um conjunto
+## O conjunto
 
 | | |
 |---|---|
+| [**Lastro**](https://github.com/BeBernos/Lastro-Business) | Finanças da família — caixa, cartão e investimentos, com criptografia de ponta a ponta |
 | **Mesa** | Plano alimentar da família (este repositório) |
 | [**Pulse**](https://github.com/BeBernos/Pulse-Business) | Treino de força com programas montados por IA e animações 2D/3D dos exercícios |
-| [**Cesta**](https://github.com/BeBernos/Cesta-Business) | Pesquisa e comparação de preços de supermercado |
+| [**Cesta**](https://github.com/BeBernos/Cesta-Business) | Pesquisa de preços de mercado, rota de compra e conferência da nota |
+
+## Sobre
+
+Concebido e construído por **Bruno Bernos** — produto, UX e engenharia — com o Claude Code como par de programação.
+Contato: [github.com/BeBernos](https://github.com/BeBernos).
+
+## Licença
+
+Copyright © 2026 Bruno Bernos. **Todos os direitos reservados.** O código está publicado só para avaliação; não há
+permissão para usar, copiar, modificar ou distribuir. Há licenças comerciais (inclusive white-label para nutricionistas,
+clínicas e bem-estar corporativo) — veja a [LICENSE](LICENSE) e fale comigo.
