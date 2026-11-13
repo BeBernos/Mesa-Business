@@ -23,47 +23,57 @@ Foi feita para uma família de verdade e é usada todo dia desde outubro de 2026
 planos diferentes, dois celulares, uma cozinha. Dez versões depois, ela também conversa com o app de treino da família
 (Pulse) e com o de mercado (Cesta).
 
+**Em números:** 10 versões · uso diário desde out/2026 · 3 pessoas com planos diferentes · 0 dependências · 27 testes do Worker + 2 suítes de ponta a ponta em todo PR
+
 > A demonstração ao vivo usa uma **família fictícia** (Rafael, Marina e Theo) e um plano de duas semanas que sempre
 > acompanha a data de hoje. Tudo acontece no seu navegador — a API do servidor é simulada, nada é enviado.
 
 ## O que faz
 
-| | | | |
-|:---:|:---:|:---:|:---:|
-| <img src="docs/images/02-hoje.png" width="200"><br>**O dia num relance** | <img src="docs/images/03-refeicao.png" width="200"><br>**Refeição, opções, "comi só parte"** | <img src="docs/images/04-semana.png" width="200"><br>**O plano está funcionando?** | <img src="docs/images/05-compras.png" width="200"><br>**Uma lista, sincronizada, com custo** |
-| <img src="docs/images/06-saude.png" width="200"><br>**Check-in, peso, sintomas** | <img src="docs/images/07-ajustes.png" width="200"><br>**Ajustes por assunto** | <img src="docs/images/08-hoje-claro.png" width="200"><br>**Claro e escuro** | <img src="docs/images/01-login.png" width="200"><br>**Senha da família + passkey** |
+<p align="center"><img src="docs/images/features-1-pt.png" alt="" width="100%"></p>
+<p align="center"><img src="docs/images/features-2-pt.png" alt="" width="100%"></p>
 
-<p align="center"><img src="docs/images/demo.gif" width="300" alt="Mesa: trocar a opção, marcar como comida, água, painel da semana, compras"><br>
-<i>Troca o café de hoje pela opção 2, marca como comido, anota a água — o anel, o painel da semana e a lista de compras acompanham.</i></p>
+<p align="center"><img src="docs/images/demo.gif" width="300" alt=""><br><i>Troca o café de hoje pela opção 2, marca como comido, anota a água — o anel, o painel da semana e a lista de compras acompanham.</i></p>
 
-- **No dia a dia** — linha do tempo por pessoa com porções em peso cru e pronto, anel de kcal/proteína contra a meta do
-  dia, um toque para marcar a refeição (com desfazer), "comi só parte" ou "comi outra coisa" com as calorias reestimadas,
-  água, busca, deslizar entre dias, fila offline.
-- **Na casa** — uma lista de compras por semana (ou do plano inteiro) dividida entre os celulares no mercado, "já tenho em
-  casa", totais do preparo em lote com temporizadores, cardápio da semana para imprimir e o **custo** da semana com os
-  preços do app de mercado.
-- **Saúde** — check-in diário (energia, fome, intestino), fechamento da semana, diário de sintomas com o cruzamento
-  **comida × sintoma**, testes de reintrodução guiados (FODMAP) com lembretes e histórico, e a visão da criança ("comeu bem
-  / pouco / recusou") no lugar das calorias.
-- **Um app proativo** — avisos na hora da refeição que pulam o que já foi comido, e até duas perguntas por dia ("Alguma
-  reação ao alho?") respondidas na própria notificação.
-- **IA onde ela acrescenta julgamento** — o Claude lê o mês (adesão, sobras, trocas, sintomas, peso, treino, custo) por um
-  **conector MCP**, rascunha o próximo plano em partes, valida, mostra um resumo e só publica depois que o usuário confirma.
-  Sem API paga: roda na assinatura do Claude do próprio usuário.
+**Em detalhe**
+- **Refeições** — porções em peso cru e pronto, um toque para marcar (com desfazer), "comi só parte" ou "outra coisa" com as
+  calorias reestimadas por ingrediente, opções de refeição, busca, deslizar entre dias, fila offline.
+- **Casa** — lista de compras por semana ou do plano que segue as opções escolhidas, despensa, totais do preparo em lote com
+  temporizadores, a semana para imprimir e o custo da semana vindo do app de mercado.
+- **Saúde** — check-in, fechamento da semana, diário de sintomas com comida × sintoma, testes de reintrodução guiados (FODMAP)
+  e a visão da criança sem calorias.
+- **Proativa** — avisos que pulam o que já foi comido e até duas perguntas por dia, respondidas na própria notificação.
 
 ## Como funciona
 
-<p align="center"><img src="docs/images/architecture-pt.svg" alt="Diagrama da arquitetura" width="100%"></p>
+<p align="center"><img src="docs/images/architecture-pt.png" alt="" width="100%"></p>
 
-O diferente: **o plano é um contrato, não uma tela.** A IA escreve num formato JSON documentado
-([`docs/PROMPT-DIETA.md`](docs/PROMPT-DIETA.md), exemplo em [`docs/exemplo-plano.json`](docs/exemplo-plano.json)); um
-módulo só ([`public/js/plan.js`](public/js/plan.js)) valida e interpreta **no celular e no servidor** — opções de
-refeição, estimativa de refeição parcial, lista de compras, lote, custo, a análise comida × sintoma. O app nunca tem uma
-dieta fixa no código: um mês novo é um JSON novo, e os celulares da família são avisados na hora em que ele é publicado.
+A Mesa são três peças que se encaixam: um **PWA** em cada aparelho da família, **um Worker do Cloudflare** que é ao mesmo tempo
+API, agendador, envio de push e servidor MCP, e o **Claude da própria família**, que planeja o mês. Um módulo só —
+[`public/js/plan.js`](public/js/plan.js) — entende o plano, e ele roda no celular e no Worker.
 
-Cada interação é um evento num registro compartilhado (refeição comida, item comprado, peso, sintoma…) guardado no
-Cloudflare D1, com sincronização "vence a última gravação" e fila offline em cada celular. Os outros dois Workers (treino e
-mercado) falam com a Mesa por ligações privadas entre Workers — nada de endereço público.
+**No aparelho** — Módulos ES puros desenham quatro abas a partir do plano normalizado. Cada interação (comi, troca, parte, água, compra, sintoma) é um evento gravado num registro local e numa fila offline, enviado em lotes e baixado aos poucos, então dois celulares convergem sem conflitos que a família perceba. O service worker guarda o app e o plano, e os botões da notificação gravam direto no registro.
+
+**Na borda** — O Worker serve o app, a API REST (`/api/*`), a conferência das passkeys e o endereço MCP. Um cron roda a cada minuto: calcula os avisos de refeição a partir de uma agenda compacta no KV, tira os que já foram marcados como comidos e faz as perguntas proativas do dia (no máximo duas, nunca repetidas). O Web Push é feito do zero (VAPID ES256 + RFC 8291).
+
+**Modelo de dados** — O D1 guarda o registro compartilhado (`tipo · dia · pessoa · k · v`, vence a última gravação) e uma tabela chave-valor para planos, histórico, rascunho da IA e preços do mercado; o KV guarda aparelhos, inscrições e a agenda dos avisos. Planos publicados a partir de nov/2026 ficam no D1 para leitura imediata; os antigos são lidos do KV.
+
+**O ciclo com a IA** — Seis ferramentas MCP deixam o Claude ler o mês (adesão, sobras, trocas, sintomas, testes, peso, água, treino, custo), escrever o plano em partes de 7 dias, validar com o mesmo motor e publicar só depois do sim do usuário.
+
+**Integrações** — O app de treino (Pulse) e o de mercado (Cesta) chamam a entrada `Ponte` da Mesa por service bindings: entram peso, "treinou?", gasto do cardio e a agenda de treino; sai a lista de compras da dieta para a Cesta e voltam os preços.
+
+### O fluxo
+
+<p align="center"><img src="docs/images/flow-pt.png" alt="" width="100%"></p>
+
+### Decisões de projeto
+
+| Decisão | Por quê |
+|---|---|
+| **O plano é um contrato JSON** | Mês novo nunca exige versão nova; a IA não consegue produzir o que o app não entende. |
+| **O mesmo motor no celular e no servidor** | O cron, a IA e as telas concordam sobre o que é o almoço — sempre. |
+| **MCP, não API paga** | O Claude do próprio usuário planeja; sem conta de API e sem automatizar a conta de ninguém. |
+| **Eventos, não documentos** | Refeição parcial, troca e compra são eventos → sincronização, offline e análises de um modelo só. |
 
 ## Segurança
 
