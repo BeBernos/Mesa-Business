@@ -1,9 +1,12 @@
 import { generateVapid, sendPush, b64u, unb64u } from "./webpush.js";
 import { verificarAssercao, algSuportado, importarChave } from "./webauthn.js";
 import { dueBetween, upcoming, localDate, addDays } from "./schedule.js";
-import { normalizarPlano, agenda, listaDeCompras, totais, metaDoDia, comidaXSintoma, historicoTestes, VEREDITOS, lerAgendaPulse, custoDaLista, semanas, slug } from "../public/js/plan.js";
+import { normalizarPlano, agenda, metaAgua, listaDeCompras, totais, metaDoDia, comidaXSintoma, historicoTestes, VEREDITOS, lerAgendaPulse, custoDaLista, semanas, slug } from "../public/js/plan.js";
 import { responderMcp, REGRAS, exemploDoFormato } from "./mcp.js";
 import { perguntasDoMomento, HORARIOS } from "./proativo.js";
+import { avisoDeAgua, cfgAgua } from "./agua.js";
+import { cfgTratamento, dosesDoDia } from "../public/js/tratamento.js";
+import { lerDia } from "../public/js/diario.js";
 
 // Chaves no KV:
 //   meta          { history: [{ id, title, from, to, uploadedAt, by, method }] }  (mais novo primeiro)
@@ -175,11 +178,17 @@ async function rebuildSched(env, meta) {
   const today = localDate(Date.now(), tzOf(env));
   const keep = addDays(today, -2);
   const relevant = meta.history.filter((h) => h.to >= keep).reverse(); // do mais velho para o mais novo
-  const merged = { persons: {}, days: {}, lastDate: null };
+  const merged = { persons: {}, days: {}, lastDate: null, agua: {} };
   for (const h of relevant) {
     const s = await getJSON(env, `sched:${h.id}`, null);
     if (!s) continue;
+    if (!s.agua) {
+      // agenda guardada antes da Fase 3: refaz a água a partir do plano bruto (uma vez; depois fica guardada)
+      const { plano } = normalizarPlano((await lerPlanoBruto(env, h.id)) || "");
+      if (plano) { s.agua = agenda(plano).agua; await putJSON(env, `sched:${h.id}`, s); }
+    }
     Object.assign(merged.persons, s.persons);
+    Object.assign(merged.agua, s.agua || {});
     for (const [date, d] of Object.entries(s.days)) if (date >= keep) merged.days[date] = { ...d, planId: h.id };
   }
   const dates = Object.keys(merged.days).sort();
@@ -260,7 +269,7 @@ async function contextoFamilia(env, dias) {
   const desde = addDays(hoje, -Math.max(7, Math.min(120, Number(dias) || 45)));
   const { info, plano, historico } = await planoVigente(env, hoje);
   const { results } = await (await db(env))
-    .prepare(`SELECT kind, day, person, k, v FROM log WHERE deleted = 0 AND day >= ? AND kind IN ('weight','feedback','symptom','test','eaten','swap','trained','partial','checkin','water','aceite','pulse') ORDER BY day`)
+    .prepare(`SELECT kind, day, person, k, v FROM log WHERE deleted = 0 AND day >= ? AND kind IN ('weight','feedback','symptom','test','eaten','swap','trained','partial','checkin','water','aceite','pulse','dose','sideeffect','day','week') ORDER BY day`)
     .bind(addDays(hoje, -365)).all();
   const r = results.filter((x) => x.kind === "weight" || x.kind === "test" || x.day >= desde); // peso e testes: o ano todo
   const valor = new Map(results.map((x) => [`${x.kind}|${x.day}|${x.person}|${x.k}`, x.v]));
@@ -290,6 +299,13 @@ async function contextoFamilia(env, dias) {
     trocasDeOpcao: por("swap").map((x) => ({ dia: x.day, pessoa: x.person, refeicao: x.k, opcaoEscolhida: Number(x.v) + 1 })),
     naoTreinou: por("trained").filter((x) => x.v === "0").map((x) => ({ dia: x.day, pessoa: x.person })),
     aguaMl: por("water").map((x) => ({ dia: x.day, pessoa: x.person, ml: Number(x.v) })),
+    tratamentos: Object.fromEntries((await Promise.all((plano?.pessoas || []).map(async (p) => [p.id, cfgTratamento(lerJsonSeguro(await lerChave(env, `tratamento:${p.id}`)))]))).filter(([, t]) => t)),
+    dosesTomadas: await (async () => { const nomes = {}; for (const p of plano?.pessoas || []) for (const d of cfgTratamento(lerJsonSeguro(await lerChave(env, `tratamento:${p.id}`)))?.doses || []) nomes[`${p.id}|${d.id}`] = d.nome;
+      return por("dose").filter((x) => x.v === "1").map((x) => ({ dia: x.day, pessoa: x.person, dose: x.k, nome: nomes[`${x.person}|${x.k}`] || null })); })(),
+    efeitosColaterais: por("sideeffect").map((x) => ({ dia: x.day, pessoa: x.person, ...lerJsonSeguro(x.v) })),
+    fechamentosDoDia: por("day").map((x) => ({ dia: x.day, pessoa: x.person, ...lerDia(x.v) })),
+    fechamentosDaSemana: por("week").map((x) => ({ semanaAte: x.day, pessoa: x.person, ...lerJsonSeguro(x.v) })),
+    analisesAnteriores: Object.fromEntries(await Promise.all((plano?.pessoas || []).map(async (p) => [p.id, (await lerAnalises(env, p.id)).slice(0, 3).map(({ data, titulo, texto }) => ({ data, titulo, texto }))]))),
     custoDaDieta: await (async () => {
       const pc = await precosCesta(env);
       if (!pc || !plano) return null;
@@ -382,13 +398,30 @@ ${JSON.stringify(exemploDoFormato())}` },
         await gravarChave(env, "rascunho", null);
         return { publicado: true, id: resposta.id, celularesAvisados: resposta.notified, ...resumoDoPlano(plano, avisos) };
       } },
+    { name: "gravar_analise", title: "Gravar a análise no app",
+      description: "Grava a sua análise (da semana, do mês ou do tratamento) no Diário da Mesa; enquanto não for lida, aparece como cartão na Hoje da pessoa. Com so_validar=true só confere e devolve como vai ficar; grave (so_validar=false) depois que o Rafael confirmar. pessoa = id do plano (rafael, marina, theo); para a família, grave uma para cada adulto.",
+      inputSchema: { type: "object", properties: { pessoa: { type: "string" }, titulo: { type: "string" }, texto: { type: "string" }, so_validar: { type: "boolean" } }, required: ["pessoa", "titulo", "texto", "so_validar"] },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      run: async (a) => {
+        const hoje = localDate(Date.now(), tzOf(env));
+        const { plano } = await planoVigente(env, hoje);
+        const pessoas = (plano?.pessoas || []).map((p) => p.id);
+        if (!pessoas.includes(a.pessoa)) throw new Error(`Pessoa desconhecida: use ${pessoas.join(", ")} (para a família, grave uma análise para cada adulto).`);
+        const titulo = cleanStr(String(a.titulo || "").trim(), 80), texto = cleanStr(String(a.texto || "").trim(), 8000);
+        if (!titulo || !texto) throw new Error("Precisa de título e texto.");
+        const analise = { id: idAnalise(), data: hoje, titulo, texto, lida: false };
+        if (a.so_validar !== false) return { valido: true, vaiGravar: analise };
+        const lista = await lerAnalises(env, a.pessoa);
+        await gravarChave(env, `analises:${a.pessoa}`, JSON.stringify([analise, ...lista].slice(0, 30)));
+        return { gravado: true, ...analise };
+      } },
   ];
 }
 
 // ---------- registro compartilhado (D1): comi, compras, peso, sintomas, testes ----------
 // Uma linha por fato; o celular manda "ops" e puxa o que mudou desde o último "since".
 
-const KINDS = new Set(["eaten", "shop", "shopx", "weight", "symptom", "test", "trained", "swap", "feedback", "partial", "checkin", "burn", "water", "aceite"]);
+const KINDS = new Set(["eaten", "shop", "shopx", "weight", "symptom", "test", "trained", "swap", "feedback", "partial", "checkin", "burn", "water", "aceite", "dose", "sideeffect", "day", "week"]);
 const dbReady = new WeakMap(); // por banco: cria a tabela uma vez por instância do Worker
 function db(env) {
   if (!dbReady.has(env.DB)) {
@@ -448,6 +481,15 @@ async function writeLog(req, env) {
   const stmts = [];
   for (const [i, o] of ops.slice(0, 200).entries()) {
     if (!o || !KINDS.has(o.kind) || !/^\d{4}-\d{2}-\d{2}$/.test(o.day || "")) continue;
+    if (o.kind === "water" && o.add !== undefined) {
+      // "+250" da notificação: soma no servidor, para não sobrescrever um copo anotado no app nesse meio-tempo
+      const add = Math.round(Number(o.add));
+      if (!Number.isFinite(add) || Math.abs(add) > 8000) continue;
+      stmts.push(d.prepare(`INSERT INTO log (kind, day, person, k, v, deleted, updated, by) VALUES ('water', ?, ?, '', CAST(CAST(MIN(8000, MAX(0, ?)) AS INTEGER) AS TEXT), 0, ?, ?)
+        ON CONFLICT(kind, day, person, k) DO UPDATE SET v = CAST(CAST(MIN(8000, MAX(0, (CASE WHEN log.deleted = 1 THEN 0 ELSE COALESCE(CAST(log.v AS INTEGER), 0) END) + ?)) AS INTEGER) AS TEXT),
+        deleted = 0, updated = excluded.updated, by = excluded.by`).bind(o.day, cleanStr(o.person, 24), add, now + i, cleanStr(device, 40), add));
+      continue;
+    }
     stmts.push(d.prepare(`INSERT INTO log (kind, day, person, k, v, deleted, updated, by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(kind, day, person, k) DO UPDATE SET v = excluded.v, deleted = excluded.deleted, updated = excluded.updated, by = excluded.by`)
       .bind(o.kind, o.day, cleanStr(o.person, 24), cleanStr(o.k, 80), o.v == null ? null : cleanStr(String(o.v), 2000), o.deleted ? 1 : 0, now + i, cleanStr(device, 40)));
@@ -545,6 +587,44 @@ async function rotas(req, env, ctx, url, n) {
   const path = url.pathname;
   const method = req.method;
 
+  const anl = path.match(/^\/api\/analises\/([\w-]{1,24})(?:\/([\w-]{1,24})\/lida)?$/);
+  if (anl && method === "GET" && !anl[2]) return json(await lerAnalises(env, anl[1]));
+  if (anl && method === "POST" && !anl[2]) {
+    // sem conector: a pessoa cola a resposta do Claude no app (já lida: ela acabou de ler)
+    const b = (await req.json().catch(() => null)) || {};
+    const titulo = cleanStr(String(b.titulo || "").trim(), 80), texto = cleanStr(String(b.texto || "").trim(), 8000);
+    if (!titulo || !texto) return json({ error: "Precisa de título e texto" }, 400);
+    const { plano: pv } = await planoVigente(env, localDate(Date.now(), tzOf(env)));
+    if (!(pv?.pessoas || []).some((p) => p.id === anl[1])) return json({ error: "Pessoa fora do plano" }, 400);
+    const analise = { id: idAnalise(), data: localDate(Date.now(), tzOf(env)), titulo, texto, lida: true, colada: true };
+    await gravarChave(env, `analises:${anl[1]}`, JSON.stringify([analise, ...(await lerAnalises(env, anl[1]))].slice(0, 30)));
+    return json(analise);
+  }
+  if (anl && method === "PUT" && anl[2]) {
+    const lista = await lerAnalises(env, anl[1]);
+    const x = lista.find((y) => y.id === anl[2]);
+    if (!x) return json({ error: "Análise não encontrada" }, 404);
+    x.lida = true;
+    await gravarChave(env, `analises:${anl[1]}`, JSON.stringify(lista));
+    return json({ ok: true });
+  }
+  const trat = path.match(/^\/api\/tratamento\/([\w-]{1,24})$/);
+  if (trat && method === "GET") return json(cfgTratamento(JSON.parse((await lerChave(env, `tratamento:${trat[1]}`)) || "null")));
+  if (trat && method === "DELETE") { await gravarChave(env, `tratamento:${trat[1]}`, null); return json({ ok: true }); }
+  if (trat && method === "PUT") {
+    const t = cfgTratamento(await req.json().catch(() => null));
+    if (!t) return json({ error: "Tratamento inválido: precisa de nome e data de início (AAAA-MM-DD)" }, 400);
+    await gravarChave(env, `tratamento:${trat[1]}`, JSON.stringify(t));
+    return json(t);
+  }
+  const aguaCfg = path.match(/^\/api\/agua-cfg\/([\w-]{1,24})$/);
+  if (aguaCfg && method === "GET") return json(cfgAgua(JSON.parse((await lerChave(env, `agua-cfg:${aguaCfg[1]}`)) || "null")));
+  if (aguaCfg && method === "PUT") {
+    // mescla com o que já está guardado: desligar pela Mesa antiga não apaga os horários
+    const cfg = cfgAgua({ ...JSON.parse((await lerChave(env, `agua-cfg:${aguaCfg[1]}`)) || "{}"), ...((await req.json().catch(() => null)) || {}) });
+    await gravarChave(env, `agua-cfg:${aguaCfg[1]}`, JSON.stringify(cfg));
+    return json(cfg);
+  }
   if (path === "/api/session") return json({ ok: true, tz: tzOf(env), locked: n < 2, idleHours: IDLE_MS / 3600e3 });
   if (path === "/api/vapid") return json({ publicKey: (await vapidOf(env)).publicKey });
   if (path === "/api/passkey/desafio") return json({ challenge: await novoDesafio(env) });
@@ -663,7 +743,8 @@ async function tick(env, scheduledTime) {
   const devices = await getJSON(env, "devices", {});
   const list = Object.values(devices).filter((d) => d.sub);
   if (!list.length) return;
-  const [sched, snoozes] = await Promise.all([getJSON(env, "sched", {}), getJSON(env, "snoozes", [])]);
+  let [sched, snoozes] = await Promise.all([getJSON(env, "sched", {}), getJSON(env, "snoozes", [])]);
+  if (sched.persons && !sched.agua) sched = await rebuildSched(env, await lerMeta(env)); // agenda de antes da Fase 3
 
   const tz = tzOf(env);
   const to = scheduledTime;
@@ -675,7 +756,9 @@ async function tick(env, scheduledTime) {
   for (const s of dueSnoozes) if (devices[s.deviceId]?.sub) targets.push({ device: devices[s.deviceId], payload: s.payload });
   if (dueSnoozes.length) await putJSON(env, "snoozes", snoozes.filter((s) => s.at > to));
 
+  await dosesNosLembretes(env, sched, targets);
   targets.push(...(await perguntas(env, list, sched, to)));
+  targets.push(...(await avisosDeAgua(env, list, sched, to)));
   const enviar = await semRefeicoesFeitas(env, targets);
   if (enviar.length) await pushMany(env, enviar, { ttl: 1800, urgency: "high" });
 }
@@ -722,6 +805,65 @@ async function perguntas(env, aparelhos, sched, quando) {
       if (q.id === "sumido") await gravarChave(env, `pro:${pid}:sumido`, hoje);
     }
     if (qs.length) await gravarChave(env, chave, JSON.stringify(enviados));
+  }
+  return targets;
+}
+
+/** Id de análise: o tempo + um pedaço aleatório (duas no mesmo milissegundo não colidem). */
+const idAnalise = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/** Análises do Claude gravadas para a pessoa (mais nova primeiro). */
+async function lerAnalises(env, pid) {
+  try { const l = JSON.parse((await lerChave(env, `analises:${pid}`)) || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+}
+
+// ---------- doses do tratamento: vão no mesmo lembrete da refeição (sem notificação extra), com o botão "Tomei" ----------
+async function dosesNosLembretes(env, sched, targets) {
+  const cache = new Map();
+  for (const { payload } of targets) {
+    const eat = payload.kind === "meal" && payload.eat;
+    if (!eat) continue;
+    if (!cache.has(eat.person)) cache.set(eat.person, cfgTratamento(JSON.parse((await lerChave(env, `tratamento:${eat.person}`)) || "null")));
+    const t = cache.get(eat.person);
+    if (!t) continue;
+    const refs = (sched.days?.[eat.day]?.meals?.[eat.person] || []).map((m) => ({ id: m.key, nome: m.name, titulo: m.pre, tipo: m.tipo, hora: m.t }));
+    const doses = dosesDoDia(t, eat.day, refs).filter((d) => d.refeicao === eat.k);
+    if (!doses.length) continue;
+    payload.body = `💊 ${doses.map((d) => d.nome).join(" + ")} · ${payload.body}`.slice(0, 260);
+    payload.doses = doses.map((d) => ({ kind: "dose", day: eat.day, person: eat.person, k: d.id, v: "1" }));
+  }
+}
+
+// ---------- água que cobra (src/agua.js decide; aqui junta os fatos e guarda quando avisou) ----------
+// Vai para o celular do dono (a pessoa em que ele abre), fora do limite das perguntas. Criança não recebe.
+async function avisosDeAgua(env, aparelhos, sched, quando) {
+  const tz = tzOf(env);
+  const hm = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(quando));
+  const hoje = localDate(quando, tz);
+  const porPessoa = new Map();
+  for (const d of aparelhos) {
+    const pid = d.viewPerson || d.persons?.[0];
+    if (!pid || !sched.persons?.[pid]) continue;
+    if (!porPessoa.has(pid)) porPessoa.set(pid, []);
+    porPessoa.get(pid).push(d);
+  }
+  const targets = [];
+  for (const [pid, devs] of porPessoa) {
+    const info = sched.agua?.[pid];
+    if (info ? info.crianca : pid === "theo") continue; // agenda antiga sem o campo: mesma regra de js/plan.js
+    const cfg = cfgAgua(JSON.parse((await lerChave(env, `agua-cfg:${pid}`)) || "null"));
+    if (!cfg.ligado || hm < cfg.acorda || hm >= cfg.dorme) continue;
+    const d = await db(env);
+    const agua = await d.prepare(`SELECT v, updated FROM log WHERE kind = 'water' AND day = ? AND person = ? AND deleted = 0`).bind(hoje, pid).first();
+    const peso = await d.prepare(`SELECT v FROM log WHERE kind = 'weight' AND person = ? AND deleted = 0 ORDER BY day DESC LIMIT 1`).bind(pid).first();
+    const metaMl = metaAgua({ pessoas: [{ id: pid, metas: { agua: info?.meta || null }, peso: { atual: info?.peso || null } }] }, pid, Number(peso?.v) || null);
+    const chave = `agua-aviso:${pid}:${hoje}`;
+    const aviso = avisoDeAgua({ hm, agora: quando, metaMl, bebido: Number(agua?.v) || 0, cfg, ultimoRegistro: agua?.updated || null, ultimoAviso: JSON.parse((await lerChave(env, chave)) || "null") });
+    if (!aviso) continue;
+    await gravarChave(env, chave, JSON.stringify({ at: quando, nivel: aviso.nivel }));
+    const copo = (ml) => ({ titulo: `💧 +${ml}`, ops: [{ kind: "water", day: hoje, person: pid, k: "", add: ml }] });
+    const payload = { kind: "agua", title: aviso.title, body: aviso.body, tag: `agua-${pid}-${hoje}`, url: `/?aba=hoje&pessoa=${encodeURIComponent(pid)}&dia=${hoje}`, respostas: [copo(250), copo(500)] };
+    for (const device of devs) targets.push({ device, payload });
   }
   return targets;
 }

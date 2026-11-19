@@ -20,10 +20,10 @@ metas, a família divide uma lista de compras só, e o plano do mês seguinte é
 mês realmente foi.**
 
 Foi feita para uma família de verdade e é usada todo dia desde outubro de 2026: dois adultos e uma criança em três
-planos diferentes, dois celulares, uma cozinha. Dez versões depois, ela também conversa com o app de treino da família
+planos diferentes, dois celulares, uma cozinha. Vinte versões depois, ela também conversa com o app de treino da família
 (Pulse) e com o de mercado (Cesta).
 
-**Em números:** 10 versões · uso diário desde out/2026 · 3 pessoas com planos diferentes · 0 dependências · 27 testes do Worker + 2 suítes de ponta a ponta em todo PR
+**Em números:** 20 versões · uso diário desde out/2026 · 3 pessoas com planos diferentes · 0 dependências · 43 testes do Worker e do motor + uma suíte de ponta a ponta em todo PR
 
 > A demonstração ao vivo usa uma **família fictícia** (Rafael, Marina e Theo) e um plano de duas semanas que sempre
 > acompanha a data de hoje. Tudo acontece no seu navegador — a API do servidor é simulada, nada é enviado.
@@ -90,8 +90,8 @@ trocado. Detalhes em [SECURITY.md](SECURITY.md).
   celular de mentira que decifra as mensagens de verdade.
 - **Um motor, dois ambientes** — o mesmo módulo do plano roda no navegador e no Worker, então o servidor sabe responder "o
   que tem no almoço?" para a IA e para o cron.
-- **Testado como produto** — 27 testes do Worker e do motor no test runner do Node (KV em memória, D1 sobre `node:sqlite`)
-  e duas suítes de ponta a ponta com Playwright (passkey com autenticador virtual, offline, gestos, fonte grande a 280 px,
+- **Testado como produto** — 43 testes do Worker e do motor no test runner do Node (KV em memória, D1 sobre `node:sqlite`)
+  e uma suíte de ponta a ponta com Playwright (passkey com autenticador virtual, offline, gestos, fonte grande a 280 px,
   computador). Tudo roda a cada pull request.
 - **Acessível** — rótulos para leitor de tela nos botões só com ícone, telas conferidas com a fonte grande do Android,
   nenhum estado só por cor.

@@ -11,9 +11,12 @@ Para montar o plano novo:
 2. Chame formato_do_plano para ver as regras e um exemplo válido.
 3. iniciar_rascunho com o cabeçalho (sem "dias"), depois adicionar_dias em blocos de até 7 dias.
 4. publicar_rascunho com so_validar=true, mostre o resumo ao Rafael e só publique (so_validar=false) depois que ele confirmar.
-Ao publicar, os celulares da família são avisados na hora.`;
+Ao publicar, os celulares da família são avisados na hora.
+Para analisar a semana (ou o tratamento): contexto_da_familia (fechamentosDoDia, fechamentosDaSemana, tratamentos, dosesTomadas, analisesAnteriores),
+depois gravar_analise com so_validar=true; mostre o texto ao Rafael e grave (so_validar=false) depois que ele confirmar — a análise aparece no Diário do app.`;
 
 export const REGRAS = `Formato "plano-familia/2" (JSON). Regras:
+- Tratamento (fora do plano, cadastrado no app por pessoa): no contexto vem em "tratamentos" (nome, início, dias, doses com "quando" = refeição ou HH:MM), "dosesTomadas" e "efeitosColaterais". O "diarioDeSintomas" traz {tipo, intensidade, hora, texto} (registros antigos: {texto, nivel}); tipos sangue/peso/febre/dornoite são sinais de alerta. Use isso para ajustar a dieta e, se for o caso, sugerir estender, parar ou começar a reintrodução — sem prescrever remédio.
 - Datas AAAA-MM-DD, horas HH:MM (24h, São Paulo). Um item de "dias" para cada data de "inicio" a "fim".
 - Pessoas com ids fixos: rafael, marina, theo. "metas.kcal" por tipo de dia ({"T":2400,"D":2200}) ou um número; "metas.agua" (ml por dia) é opcional — sem ela, a Mesa usa 35 ml/kg. "crianca": true (opcional; o Theo já é) troca as calorias por "comeu bem / pouco / recusou" — no contexto vem como aceitacaoCrianca.
 - Item de refeição: ["Nome", quantidade, "unidade"] ou ["Nome", qtd, "unid", "obs"]; unidades g, ml ou un; SEMPRE peso cru.

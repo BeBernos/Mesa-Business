@@ -128,6 +128,7 @@ test("fluxo completo: aparelhos, upload, aviso de atualização, cron, adiar e i
   const rafael = fakePhone("rafael");
   const marina = fakePhone("marina");
   const today = localDate(Date.now(), TZ);
+  for (const pid of ["rafael", "marina"]) await call("PUT", `/api/agua-cfg/${pid}`, { ligado: false }); // teste das refeições; a água tem o seu
 
   await call("PUT", "/api/devices/aparelho-rafael", { name: "S25", persons: ["rafael"], lead: 10, sub: rafael.sub, uploader: true });
   await call("PUT", "/api/devices/aparelho-marina", { name: "S24 FE", persons: ["marina", "rafael"], lead: 0, sub: marina.sub, summary: { on: true, time: "06:30" } });
@@ -170,7 +171,7 @@ test("fluxo completo: aparelhos, upload, aviso de atualização, cron, adiar e i
   push.sent.length = 0;
   await cron(localToEpoch(today, "13:00", TZ));
   assert.equal(push.sent.length, 2);
-  assert.deepEqual(push.sent.map((x) => marina.decrypt(x.body).title).sort(), ["13:00 · Almoço · Marina", "13:00 · Almoço · Rafael"]);
+  assert.deepEqual(push.sent.map((x) => marina.decrypt(x.body).title).sort(), ["13:00 · Almoço · Rafael", "13:00 · Almoço · Marina"].sort());
 
   push.sent.length = 0;
   await cron(localToEpoch(today, "06:30", TZ));
@@ -403,7 +404,7 @@ test("conector do Claude (MCP): contexto, rascunho em partes, validar e publicar
   const notif = await worker.fetch(new Request("https://app.test" + caminho, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) }), env, ctx);
   assert.equal(notif.status, 202);
   const nomes = (await rpc("tools/list", {})).result.tools.map((t) => t.name);
-  assert.deepEqual(nomes, ["contexto_da_familia", "plano_atual", "formato_do_plano", "iniciar_rascunho", "adicionar_dias", "publicar_rascunho"]);
+  assert.deepEqual(nomes, ["contexto_da_familia", "plano_atual", "formato_do_plano", "iniciar_rascunho", "adicionar_dias", "publicar_rascunho", "gravar_analise"]);
 
   // um feedback e um peso aparecem no contexto
   const hoje = localDate(Date.now(), TZ);
@@ -453,6 +454,28 @@ test("planos com rodízio (\"Opção X de 3\" sem alternativas) ganham as outras
   assert.equal(m.alternativas[0].id, undefined, "a alternativa não leva o id do outro dia");
 });
 
+test("opções repetidas aparecem uma vez só (Leite da noite do Theo igual nas 3 opções)", async () => {
+  const { normalizarPlano } = await import("../public/js/plan.js");
+  const r = (titulo, n, item = titulo) => ({ hora: "19:45", nome: "Leite da noite", titulo, opcoes: `Opção ${n} de 3`, kcal: 150, proteina: 5, itens: [[item, 1, "un"]] });
+  const dias = [[r("Mamadeira", 1), r("Pão", 1)], [r("Mamadeira", 2), r("Pão", 2)], [r("Mamadeira", 3), r("Fruta", 3)]]
+    .map(([a, b], i) => ({ data: `2026-11-0${i + 1}`, refeicoes: { theo: [a, { ...b, hora: "15:30", nome: "Lanche" }] } }));
+  const { plano, erros } = normalizarPlano({ formato: "plano-familia/2", pessoas: [{ id: "theo", nome: "Theo", metas: { kcal: 1300 } }], dias });
+  assert.deepEqual(erros, []);
+  const ms = plano.dias[2].refeicoes.theo, leite = ms.find((m) => m.nome === "Leite da noite"), lanche = ms.find((m) => m.nome === "Lanche");
+  assert.equal(leite.alternativas, undefined, "três opções iguais viram nenhuma");
+  assert.equal(leite.opcoes, "");
+  assert.deepEqual([lanche.numero, ...lanche.alternativas.map((a) => [a.numero, a.titulo])], [2, [1, "Pão"]], "Pão 1 e 2 iguais: sobram 2, numeradas 1 e 2");
+  assert.equal(lanche.opcoes, "Opção 2 de 2");
+});
+
+test("destaque do dia: o teste FODMAP só aparece para quem está testando", async () => {
+  const { destaqueDe } = await import("../public/js/plan.js");
+  assert.equal(destaqueDe("Teste FODMAP · GOS 3/3", false), "");
+  assert.equal(destaqueDe("Feriado · Finados · Teste FODMAP · frutose 1/3", false), "Feriado · Finados");
+  assert.equal(destaqueDe("Feriado · Finados · Teste FODMAP · frutose 1/3", true), "Feriado · Finados · Teste FODMAP · frutose 1/3");
+  assert.equal(destaqueDe("Noite do hambúrguer", false), "Noite do hambúrguer");
+});
+
 test("comer só parte: estimativa fecha com o total da refeição e respeita kcal por item", async () => {
   const { normalizarPlano, estimarItens, consumido } = await import("../public/js/plan.js");
   const fs = await import("node:fs");
@@ -472,8 +495,9 @@ test("Mesa proativa: regras das perguntas", async () => {
   const { perguntasDoMomento } = await import("../src/proativo.js");
   const base = { dow: 3, hoje: "2026-11-11", pid: "rafael", nome: "Rafael", refeicoes: [{ t: "07:00", name: "Café", key: "0700-cafe" }, { t: "13:00", name: "Almoço", key: "1300-almoco" }], linhas: [], testes: [], ultimaSumido: null };
   const ids = (f) => perguntasDoMomento({ ...base, ...f }).map((q) => q.id);
-  assert.deepEqual(ids({ hm: "21:00" }), ["noite"]);
-  assert.deepEqual(ids({ hm: "21:00", linhas: [{ kind: "feedback", day: "2026-11-11", k: "dia", v: "{}" }] }), [], "já respondeu o dia");
+  assert.deepEqual(ids({ hm: "21:30" }), ["noite"]);
+  assert.deepEqual(ids({ hm: "21:30", linhas: [{ kind: "feedback", day: "2026-11-11", k: "dia", v: "{}" }] }), [], "já respondeu o dia");
+  assert.deepEqual(ids({ hm: "21:30", linhas: [{ kind: "day", day: "2026-11-11", k: "", v: "{}" }] }), [], "já fechou o dia na nova Mesa");
   const dia = perguntasDoMomento({ ...base, hm: "15:30" })[0];
   assert.equal(dia.id, "dia");
   assert.deepEqual(dia.payload.respostas[0].ops.map((o) => o.k), ["0700-cafe", "1300-almoco"], "'comi tudo certo' marca as refeições até agora");
@@ -486,6 +510,7 @@ test("Mesa proativa: regras das perguntas", async () => {
   assert.deepEqual(ids({ hm: "19:00" }), ["sumido"]);
   assert.deepEqual(ids({ hm: "19:00", ultimaSumido: "2026-11-10" }), [], "não insiste antes de 3 dias");
   assert.deepEqual(ids({ hm: "20:00", dow: 0 }), ["semana"]);
+  assert.deepEqual(ids({ hm: "20:00", dow: 0, linhas: [{ kind: "week", day: "2026-11-11", k: "", v: "{}" }] }), [], "já fechou a semana na nova Mesa");
   assert.deepEqual(ids({ hm: "20:00" }), [], "fechamento só no domingo");
 });
 
@@ -496,8 +521,9 @@ test("Mesa proativa no cron: chega ao dono do celular, com botões, e não repet
   const hoje = localDate(Date.now(), TZ);
   await call("PUT", "/api/devices/aparelho-rafael", { name: "S25", persons: ["rafael"], viewPerson: "rafael", sub: rafael.sub });
   await call("POST", "/api/plan", { plano: planoPara(hoje), deviceId: "aparelho-rafael" }); // quem sobe não recebe o aviso de plano novo
+  await call("PUT", "/api/agua-cfg/rafael", { ligado: false }); // teste das perguntas; a água tem o seu
   let push = interceptPush();
-  await cron(localToEpoch(hoje, "21:00", TZ));
+  await cron(localToEpoch(hoje, "21:30", TZ));
   push.restore();
   assert.equal(push.sent.length, 1);
   const p = rafael.decrypt(push.sent[0].body);
@@ -505,7 +531,7 @@ test("Mesa proativa no cron: chega ao dono do celular, com botões, e não repet
   assert.match(p.title, /Como foi o dia, Rafael/);
   assert.equal(p.respostas.length, 2);
   push = interceptPush();
-  await cron(localToEpoch(hoje, "21:00", TZ));
+  await cron(localToEpoch(hoje, "21:30", TZ));
   push.restore();
   assert.equal(push.sent.length, 0, "a mesma pergunta não volta no mesmo dia");
   // desligar em Ajustes
@@ -522,17 +548,20 @@ test("refeição já marcada como 'comi' não é avisada (nem depois de adiar)",
   const rafael = fakePhone("rafael");
   const hoje = localDate(Date.now(), TZ);
   await call("PUT", "/api/devices/aparelho-rafael", { name: "S25", persons: ["rafael"], lead: 0, sub: rafael.sub, proativo: false });
+  await call("PUT", "/api/agua-cfg/rafael", { ligado: false }); // teste das refeições; a água tem o seu
   await call("POST", "/api/plan", { plano: planoPara(hoje), deviceId: "aparelho-rafael" });
   let push = interceptPush();
   await cron(localToEpoch(hoje, "13:00", TZ));
   push.restore();
   const p = rafael.decrypt(push.sent[0].body);
   await call("POST", "/api/snooze", { deviceId: "aparelho-rafael", minutes: 15, payload: p });
-  assert.deepEqual(JSON.parse(env.KV.m.get("snoozes"))[0].payload.eat, p.eat, "o adiado guarda o 'Comi'");
+  const adiado = JSON.parse(env.KV.m.get("snoozes"))[0];
+  assert.deepEqual(adiado.payload.eat, p.eat, "o adiado guarda o 'Comi'");
   await call("POST", "/api/log", { ops: [{ kind: "eaten", day: hoje, person: "rafael", k: "1300-almoco", v: "1" }] });
   push = interceptPush();
   await cron(localToEpoch(hoje, "13:00", TZ));
-  await cron(JSON.parse(env.KV.m.get("snoozes"))[0].at + 30000);
+  // o adiado vence em "agora real + 15 min": de madrugada, o cron das 13:00 já o consome — por isso a hora guardada
+  await cron(adiado.at + 30000);
   push.restore();
   assert.equal(push.sent.length, 0);
 });
@@ -657,4 +686,266 @@ test("custo da dieta com os preços da Cesta", async () => {
   const c = custoDaLista(listaDeCompras(plano, hoje, hoje), meta.precosCesta.precos);
   // frango 100 + 80 g × 0,032 + arroz 80 g × 0,006
   assert.deepEqual(c, { total: 6.24, comPreco: 2, itens: 2 });
+});
+
+test("água: esperado, atraso e quando avisar (sem virar ruído)", async () => {
+  const { esperadoAgora, avisoDeAgua, cfgAgua } = await import("../src/agua.js");
+  const cfg = cfgAgua(null);
+  assert.deepEqual(cfg, { ligado: true, acorda: "07:00", dorme: "22:00" }, "padrão 7–22, ligado");
+  assert.deepEqual(cfgAgua({ ligado: false, acorda: "25:00", dorme: "06:00" }), { ligado: false, acorda: "07:00", dorme: "22:00" }, "hora inválida cai no padrão");
+  assert.deepEqual(cfgAgua({ acorda: "23:00", dorme: "08:00" }), { ligado: true, acorda: "07:00", dorme: "22:00" }, "acorda depois de dormir cai no padrão");
+  assert.equal(esperadoAgora(3000, cfg, "13:00"), 1200);
+  assert.equal(esperadoAgora(3000, cfg, "06:00"), 0);
+  assert.equal(esperadoAgora(3000, cfg, "23:00"), 3000);
+  const T = Date.UTC(2026, 10, 19, 16, 0); // só a diferença entre horários importa
+  const base = { hm: "13:00", agora: T, metaMl: 3000, cfg, ultimoAviso: null, ultimoRegistro: null };
+  const leve = avisoDeAgua({ ...base, bebido: 900 });
+  assert.equal(leve.nivel, "leve");
+  assert.match(leve.title, /Hora de um copo/);
+  const forte = avisoDeAgua({ ...base, bebido: 400 });
+  assert.equal(forte.nivel, "forte");
+  assert.match(forte.title, /800 ml atrás/);
+  assert.equal(avisoDeAgua({ ...base, bebido: 1000 }), null, "atraso < 250");
+  assert.equal(avisoDeAgua({ ...base, hm: "21:59", bebido: 3000 }), null, "meta batida");
+  assert.equal(avisoDeAgua({ ...base, hm: "06:30", bebido: 0 }), null, "antes de acordar");
+  assert.equal(avisoDeAgua({ ...base, hm: "22:10", bebido: 0 }), null, "depois de dormir");
+  assert.equal(avisoDeAgua({ ...base, bebido: 400, ultimoRegistro: T - 5 * 60e3 }), null, "acabou de beber");
+  assert.equal(avisoDeAgua({ ...base, bebido: 900, ultimoAviso: { at: T - 60 * 60e3, nivel: "leve" } }), null, "leve: 1 a cada 90 min");
+  assert.ok(avisoDeAgua({ ...base, bebido: 900, ultimoAviso: { at: T - 91 * 60e3, nivel: "leve" } }), "leve: depois de 90 min");
+  assert.equal(avisoDeAgua({ ...base, bebido: 400, ultimoAviso: { at: T - 30 * 60e3, nivel: "forte" } }), null, "forte: 1 a cada 45 min");
+  assert.ok(avisoDeAgua({ ...base, bebido: 400, ultimoAviso: { at: T - 46 * 60e3, nivel: "forte" } }), "forte: depois de 45 min");
+  assert.equal(avisoDeAgua({ ...base, bebido: 0, cfg: { ...cfg, ligado: false } }), null, "desligado");
+});
+
+test("água no cron: avisa com +250/+500 que somam, respeita o intervalo, a criança e o desligado", async () => {
+  const { call, cron, flush } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  const hoje = localDate(Date.now(), TZ);
+  const plano = planoPara(hoje);
+  plano.pessoas.push({ id: "theo", nome: "Theo", metas: { kcal: 400, proteina: 20 } });
+  plano.dias[0].refeicoes.theo = [{ hora: "13:00", nome: "Almoço", kcal: 300, itens: [["Arroz", 30, "g"]] }];
+  const fones = {};
+  for (const pid of ["rafael", "marina", "theo"]) {
+    fones[pid] = fakePhone(pid);
+    await call("PUT", `/api/devices/ap-${pid}`, { name: pid, persons: [pid], viewPerson: pid, sub: fones[pid].sub, meals: false, proativo: false });
+  }
+  await call("POST", "/api/plan", { plano });
+  const avisoPlano = interceptPush(); await flush(); avisoPlano.restore(); // o "plano novo" não entra na conta da água
+  assert.equal((await call("PUT", "/api/agua-cfg/marina", { ligado: false })).status, 200);
+  assert.deepEqual((await call("GET", "/api/agua-cfg/rafael")).body, { ligado: true, acorda: "07:00", dorme: "22:00" });
+  await call("PUT", "/api/agua-cfg/marina", { acorda: "06:30" });
+  assert.deepEqual((await call("PUT", "/api/agua-cfg/marina", { ligado: false })).body, { ligado: false, acorda: "06:30", dorme: "22:00" }, "desligar mantém os horários");
+
+  const enviar = async (hm) => { const push = interceptPush(); await cron(localToEpoch(hoje, hm, TZ)); push.restore(); return push.sent; };
+  let sent = await enviar("13:00");
+  assert.equal(sent.length, 1, "só o Rafael: a Marina desligou e o Theo é criança");
+  const p = fones.rafael.decrypt(sent[0].body);
+  assert.match(p.title, /ml atrás/);
+  assert.deepEqual(p.respostas.map((r) => r.ops[0].add), [250, 500]);
+  assert.equal(p.respostas[0].ops[0].kind, "water");
+  assert.equal((await enviar("13:30")).length, 0, "forte: nada antes de 45 min");
+  assert.equal((await enviar("13:46")).length, 1, "forte: de novo depois de 45 min");
+
+  // os botões somam no servidor (não sobrescrevem um copo anotado no app)
+  await call("POST", "/api/log", { ops: [{ kind: "water", day: hoje, person: "rafael", k: "", v: "500" }] });
+  await call("POST", "/api/log", { ops: [p.respostas[0].ops[0]] });
+  await call("POST", "/api/log", { ops: [p.respostas[0].ops[0]] });
+  const linha = (await call("GET", "/api/log?since=0")).body.rows.find((r) => r.kind === "water" && r.person === "rafael");
+  assert.equal(linha.v, "1000");
+  assert.equal((await enviar("14:40")).length, 0, "com 1 L às 14:40 não está atrasado");
+});
+
+test("água: agenda guardada antes da Fase 3 (sem 'agua') usa a meta do plano depois do primeiro cron", async () => {
+  const { call, cron, flush, env } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  const hoje = localDate(Date.now(), TZ);
+  const plano = planoPara(hoje);
+  plano.pessoas[0].metas.agua = 1500;
+  const fone = fakePhone("rafael");
+  await call("PUT", "/api/devices/ap-rafael", { name: "b", persons: ["rafael"], viewPerson: "rafael", sub: fone.sub, meals: false, proativo: false });
+  await call("POST", "/api/plan", { plano });
+  const fora = interceptPush(); await flush(); fora.restore();
+  // como estava no KV antes desta versão: sem o campo da água
+  const sched = JSON.parse(env.KV.m.get("sched")); delete sched.agua; env.KV.m.set("sched", JSON.stringify(sched));
+  for (const k of [...env.KV.m.keys()].filter((k) => k.startsWith("sched:"))) { const s = JSON.parse(env.KV.m.get(k)); delete s.agua; env.KV.m.set(k, JSON.stringify(s)); }
+  await call("POST", "/api/log", { ops: [{ kind: "water", day: hoje, person: "rafael", k: "", v: "500" }] });
+  const push = interceptPush();
+  await cron(localToEpoch(hoje, "13:00", TZ) + 11 * 60e3); // 13:11: meta 1500 → esperado ~640, atraso ~140 → nada (com 2 L seriam ~360 → aviso)
+  push.restore();
+  assert.equal(push.sent.length, 0);
+  assert.equal(JSON.parse(env.KV.m.get("sched")).agua.rafael.meta, 1500, "a agenda foi refeita com a água");
+});
+
+test("outra coisa: a proteína estimada entra no consumido", async () => {
+  const { consumido } = await import("../public/js/plan.js");
+  const m = { kcal: 600, proteina: 40, itens: [{ nome: "Arroz", qtd: 100, unid: "g" }, { nome: "Frango", qtd: 120, unid: "g" }] };
+  const c = consumido(m, ["Arroz", "Frango"], 500, 25);
+  assert.equal(c.kcal, 500);
+  assert.equal(c.proteina, 25);
+  assert.equal(consumido(m, ["Arroz", "Frango"], 500).proteina, 0, "sem proteína informada, conta 0 como antes");
+});
+
+test("tratamento: validação, dia X de N, doses do dia e sintomas (novo e antigo)", async () => {
+  const { cfgTratamento, diaDoTratamento, dosesDoDia, lerSintoma, alertasRecentes } = await import("../public/js/tratamento.js");
+  assert.equal(cfgTratamento(null), null);
+  assert.equal(cfgTratamento({ nome: "", inicio: "2026-11-01" }), null, "sem nome não vale");
+  const t = cfgTratamento({ nome: "Berberina + alicina", inicio: "2026-11-01", doses: [
+    { id: "b1", nome: "Berberina", quando: "almoco" }, { id: "b2", nome: "Berberina", quando: "jantar" }, { id: "a1", nome: "Alicina", quando: "07:30" },
+    ...Array.from({ length: 20 }, (_, i) => ({ id: `x${i}`, nome: "x".repeat(200), quando: "cafe" })),
+  ] });
+  assert.equal(t.dias, 28, "duração padrão: 4 semanas");
+  assert.equal(t.doses.length, 8, "no máximo 8 doses");
+  assert.ok(t.doses.every((d) => d.nome.length <= 40));
+  assert.equal(cfgTratamento({ nome: "x", inicio: "2026-13-45" }), null, "data inválida");
+  assert.equal(cfgTratamento({ nome: "x", inicio: "2026-11-01", doses: [{ id: "a", nome: "y", quando: "25:00" }] }).doses.length, 0, "horário inválido sai");
+  assert.deepEqual(diaDoTratamento(t, "2026-11-12"), { n: 12, total: 28, ultimos: false, acabou: false, antes: false });
+  assert.equal(diaDoTratamento(t, "2026-11-26").ultimos, true, "dia 26 de 28: últimos 3 dias");
+  assert.equal(diaDoTratamento(t, "2026-11-29").acabou, true);
+  assert.equal(diaDoTratamento(t, "2026-10-31").antes, true);
+  const refs = [{ id: "r-cafe", nome: "Café da manhã", hora: "07:00" }, { id: "r-alm", nome: "Almoço", hora: "12:30" }];
+  const t3 = cfgTratamento({ nome: "B", inicio: "2026-11-01", doses: t.doses.slice(0, 3) });
+  const ds = dosesDoDia(t3, "2026-11-12", refs);
+  assert.deepEqual(ds.map((d) => [d.id, d.refeicao, d.hora]), [["a1", null, "07:30"], ["b1", "r-alm", "12:30"], ["b2", null, "23:59"]], "por hora; jantar sem refeição vai para o fim do dia");
+  assert.deepEqual(dosesDoDia(t, "2026-12-30", refs), [], "fora do período: nenhuma dose");
+  const velho = lerSintoma(JSON.stringify({ texto: "Gases depois do almoço", nivel: "moderado", hora: "14:00" }));
+  assert.equal(velho.intensidade, "media");
+  assert.match(velho.rotulo, /Gases depois do almoço/);
+  const novo = lerSintoma(JSON.stringify({ tipo: "sangue", intensidade: "forte", hora: "09:00" }));
+  assert.equal(novo.alerta, true);
+  const linhas = [{ kind: "symptom", day: "2026-11-10", v: JSON.stringify({ tipo: "febre", intensidade: "media" }) }, { kind: "symptom", day: "2026-10-01", v: JSON.stringify({ tipo: "febre" }) }, { kind: "symptom", day: "2026-11-11", v: JSON.stringify({ tipo: "gases" }) }];
+  assert.deepEqual(alertasRecentes(linhas, "2026-11-12").map((a) => a.dia), ["2026-11-10"], "só sinais de alerta dos últimos 14 dias");
+});
+
+test("tratamento: rotas validadas, 'Tomei' no lembrete da refeição e o Claude vê doses e efeitos", async () => {
+  const { call, cron, flush, env } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  const hoje = localDate(Date.now(), TZ);
+  const fone = fakePhone("rafael");
+  await call("PUT", "/api/devices/ap-rafael", { name: "b", persons: ["rafael"], viewPerson: "rafael", sub: fone.sub, lead: 0, proativo: false });
+  await call("PUT", "/api/agua-cfg/rafael", { ligado: false });
+  await call("POST", "/api/plan", { plano: planoPara(hoje) });
+  const fora = interceptPush(); await flush(); fora.restore();
+  const r = await call("PUT", "/api/tratamento/rafael", { nome: "Berberina + alicina", inicio: hoje, doses: [{ id: "b1", nome: "Berberina", quando: "almoco" }] });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.dias, 28);
+  assert.equal((await call("PUT", "/api/tratamento/marina", { nome: "" })).status, 400, "cadastro inválido é recusado");
+  assert.equal((await call("GET", "/api/tratamento/marina")).body, null);
+  const push = interceptPush();
+  await cron(localToEpoch(hoje, "13:00", TZ));
+  push.restore();
+  assert.equal(push.sent.length, 1);
+  const p = fone.decrypt(push.sent[0].body);
+  assert.match(p.body, /Berberina/);
+  assert.deepEqual(p.doses, [{ kind: "dose", day: hoje, person: "rafael", k: "b1", v: "1" }]);
+  assert.ok(p.eat, "o 'Comi' continua");
+  await call("POST", "/api/log", { ops: [p.doses[0], { kind: "sideeffect", day: hoje, person: "rafael", k: "e1", v: JSON.stringify({ texto: "enjoo leve" }) }] });
+  const { body } = await call("GET", "/api/mcp");
+  const res = await worker.fetch(new Request("https://app.test" + new URL(body.url).pathname, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "contexto_da_familia", arguments: {} } }) }), env, { waitUntil() {} });
+  const c = JSON.parse((await res.json()).result.content[0].text);
+  assert.equal(c.tratamentos.rafael.nome, "Berberina + alicina");
+  assert.deepEqual(c.dosesTomadas.map((d) => d.dose), ["b1"]);
+  assert.equal(c.efeitosColaterais[0].texto, "enjoo leve");
+});
+
+test("diário: fechamento do dia validado, média de sintomas por semana, piora por 3 semanas e o pedido ao Claude", async () => {
+  const { lerDia, notaSintomasDia, mediasPorSemana, piorouTresSemanas, segundaDe, pedidoDeAnalise, linkClaude } = await import("../public/js/diario.js");
+  assert.deepEqual(lerDia(JSON.stringify({ humor: 9, fome: "bem", texto: "x".repeat(500), sintomas: { gases: 2, inchaco: 7, zzz: 1 }, bristol: 4, energia: 6 })),
+    { humor: null, fome: "bem", texto: "x".repeat(280), sintomas: { gases: 2, inchaco: 3 }, bristol: 4, energia: null }, "valores fora da faixa saem ou são cortados");
+  assert.equal(notaSintomasDia({ sintomas: { gases: 2, inchaco: 1 } }), 3);
+  assert.equal(segundaDe("2026-11-19"), "2026-11-16", "quinta → segunda da mesma semana");
+  assert.equal(segundaDe("2026-11-22"), "2026-11-16", "domingo fecha a semana");
+  const dias = [["2026-11-03", 1], ["2026-11-04", 1], ["2026-11-10", 2], ["2026-11-17", 3], ["2026-11-18", 5], ["2026-11-24", 6]]
+    .map(([data, n]) => ({ data, fechamento: { sintomas: { gases: n } } }));
+  const ms = mediasPorSemana(dias);
+  assert.deepEqual(ms.map((s) => [s.semana, s.media]), [["2026-11-02", 1], ["2026-11-09", 2], ["2026-11-16", 4], ["2026-11-23", 6]]);
+  assert.equal(piorouTresSemanas(ms.slice(0, 3), "2026-12-01"), false, "2 subidas não bastam (regra completa no teste da revisão)");
+  const pedido = pedidoDeAnalise({ nome: "Rafael", de: "2026-11-16", ate: "2026-11-22" });
+  assert.match(pedido, /contexto_da_familia/);
+  assert.match(pedido, /gravar_analise/);
+  assert.ok(linkClaude(pedido).startsWith("https://claude.ai/new?q="));
+  assert.ok(decodeURIComponent(linkClaude(pedido).split("q=")[1]).includes("Rafael"));
+});
+
+test("diário no servidor: fechamentos no contexto, gravar_analise (validar antes) e análises lidas no app", async () => {
+  const { call, env } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  const hoje = localDate(Date.now(), TZ);
+  await call("POST", "/api/plan", { plano: planoPara(hoje) });
+  await call("POST", "/api/log", { ops: [
+    { kind: "day", day: hoje, person: "rafael", k: "", v: JSON.stringify({ humor: "bem", energia: 4, bristol: 4, sintomas: { gases: 1 } }) },
+    { kind: "week", day: hoje, person: "rafael", k: "", v: JSON.stringify({ texto: "semana boa" }) },
+  ] });
+  const { body } = await call("GET", "/api/mcp");
+  const caminho = new URL(body.url).pathname;
+  const tool = async (name, args = {}) => {
+    const res = await worker.fetch(new Request("https://app.test" + caminho, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }) }), env, { waitUntil() {} });
+    const r = (await res.json()).result;
+    return { erro: !!r.isError, dado: (() => { try { return JSON.parse(r.content[0].text); } catch (e) { return r.content[0].text; } })() };
+  };
+  const c = (await tool("contexto_da_familia")).dado;
+  assert.equal(c.fechamentosDoDia[0].energia, 4);
+  assert.equal(c.fechamentosDaSemana[0].texto, "semana boa");
+  const a = { pessoa: "rafael", titulo: "Semana de 16/11", texto: "Água melhorou; gases caíram nos dias sem feijão." };
+  const v = await tool("gravar_analise", { ...a, so_validar: true });
+  assert.equal(v.erro, false);
+  assert.deepEqual((await call("GET", "/api/analises/rafael")).body, [], "validar não grava");
+  assert.equal((await tool("gravar_analise", { ...a, pessoa: "zeca", so_validar: false })).erro, true, "pessoa fora do plano é recusada");
+  assert.equal((await tool("gravar_analise", { ...a, pessoa: "familia", so_validar: false })).erro, true, "'familia' não existe no app: recusa em vez de gravar onde ninguém lê");
+  assert.equal((await call("POST", "/api/analises/zeca", { titulo: "x", texto: "y" })).status, 400, "colar só para quem está no plano");
+  assert.equal((await tool("gravar_analise", { ...a, so_validar: false })).erro, false);
+  const lista = (await call("GET", "/api/analises/rafael")).body;
+  assert.equal(lista.length, 1);
+  assert.equal(lista[0].lida, false);
+  assert.equal((await call("PUT", `/api/analises/rafael/${lista[0].id}/lida`)).status, 200);
+  assert.equal((await call("GET", "/api/analises/rafael")).body[0].lida, true);
+  // sem conector: a resposta colada no app vira uma análise (já lida, porque a pessoa acabou de ler)
+  assert.equal((await call("POST", "/api/analises/rafael", { titulo: "", texto: "" })).status, 400);
+  assert.equal((await call("POST", "/api/analises/rafael", { titulo: "Colada", texto: "Resposta do Claude" })).status, 200);
+  assert.deepEqual((await call("GET", "/api/analises/rafael")).body.map((x) => [x.titulo, x.lida]), [["Colada", true], ["Semana de 16/11", true]]);
+});
+test("tratamento (revisão): refeição com tipo explícito recebe a dose, duração limitada a 120 e alerta sem intensidade inventada", async () => {
+  const { cfgTratamento, lerSintoma } = await import("../public/js/tratamento.js");
+  assert.equal(cfgTratamento({ nome: "x", inicio: "2026-11-01", dias: 150 }).dias, 120, "acima de 120 fica 120 (não volta para 28)");
+  const alerta = lerSintoma(JSON.stringify({ tipo: "febre", intensidade: null, hora: "09:00" }));
+  assert.equal(alerta.intensidade, null);
+  assert.doesNotMatch(alerta.rotulo, /forte/);
+  assert.doesNotMatch(lerSintoma(JSON.stringify({ tipo: "sangue", intensidade: "forte" })).rotulo, /forte/, "sinal de alerta não mostra intensidade");
+
+  const { call, cron, flush } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  const hoje = localDate(Date.now(), TZ);
+  const plano = planoPara(hoje);
+  plano.dias[0].refeicoes.rafael[0].nome = "Refeição 2";
+  plano.dias[0].refeicoes.rafael[0].tipo = "almoco";
+  const fone = fakePhone("rafael");
+  await call("PUT", "/api/devices/ap-rafael", { name: "b", persons: ["rafael"], viewPerson: "rafael", sub: fone.sub, lead: 0, proativo: false });
+  await call("PUT", "/api/agua-cfg/rafael", { ligado: false });
+  await call("POST", "/api/plan", { plano });
+  const fora = interceptPush(); await flush(); fora.restore();
+  await call("PUT", "/api/tratamento/rafael", { nome: "Berberina", inicio: hoje, doses: [{ id: "b1", nome: "Berberina", quando: "almoco" }] });
+  const push = interceptPush();
+  await cron(localToEpoch(hoje, "13:00", TZ));
+  push.restore();
+  assert.deepEqual(fone.decrypt(push.sent[0].body).doses?.map((d) => d.k), ["b1"], "o almoço com tipo explícito leva a dose");
+});
+
+test("diário (revisão): piora só com semanas seguidas, completas e alta de verdade; semana a fechar depois da meia-noite", async () => {
+  const { mediasPorSemana, piorouTresSemanas, semanaParaFechar } = await import("../public/js/diario.js");
+  const semana = (seg, n, dias = 3) => Array.from({ length: dias }, (_, i) => ({ data: new Date(Date.parse(seg + "T12:00:00Z") + i * 864e5).toISOString().slice(0, 10), fechamento: { sintomas: { gases: n } } }));
+  const sobe = [...semana("2026-10-26", 1), ...semana("2026-11-02", 2), ...semana("2026-11-09", 3), ...semana("2026-11-16", 5)];
+  assert.equal(piorouTresSemanas(mediasPorSemana(sobe), "2026-11-24"), true, "4 semanas seguidas, completas, subindo");
+  const comBuraco = [...semana("2026-10-12", 1), ...semana("2026-11-02", 2), ...semana("2026-11-09", 3), ...semana("2026-11-16", 5)];
+  assert.equal(piorouTresSemanas(mediasPorSemana(comBuraco), "2026-11-24"), false, "semana faltando no meio não conta como seguidas");
+  assert.equal(piorouTresSemanas(mediasPorSemana(sobe), "2026-11-18"), false, "a semana em curso (incompleta) não entra");
+  const poucos = [...semana("2026-10-26", 1, 1), ...semana("2026-11-02", 2, 1), ...semana("2026-11-09", 3, 1), ...semana("2026-11-16", 5, 1)];
+  assert.equal(piorouTresSemanas(mediasPorSemana(poucos), "2026-11-24"), false, "semana com menos de 3 dias fechados não decide");
+  const tico = [0, 0.1, 0.2, 0.4].flatMap((n, i) => semana(["2026-10-26", "2026-11-02", "2026-11-09", "2026-11-16"][i], n * 10).map((d) => ({ ...d, fechamento: { sintomas: { gases: 0 } } })));
+  assert.equal(piorouTresSemanas(mediasPorSemana(tico), "2026-11-24"), false, "sem subir pelo menos 1,5 ponto não é piora");
+  const aberta = () => false, fechada = () => true;
+  assert.deepEqual(semanaParaFechar("2026-11-23", 30, aberta), { de: "2026-11-16", ate: "2026-11-22" }, "segunda 00:30 com a anterior aberta: fecha a anterior");
+  assert.deepEqual(semanaParaFechar("2026-11-23", 30, fechada), { de: "2026-11-23", ate: "2026-11-29" }, "anterior já fechada: a semana nova");
+  assert.deepEqual(semanaParaFechar("2026-11-23", 13 * 60, aberta), { de: "2026-11-23", ate: "2026-11-29" }, "depois do meio-dia de segunda: a semana nova");
+  assert.deepEqual(semanaParaFechar("2026-11-21", 18 * 60, aberta), { de: "2026-11-16", ate: "2026-11-22" }, "sábado: a semana atual, guardada no domingo");
 });

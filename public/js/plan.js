@@ -169,6 +169,21 @@ function opcoesPorRodizio(dias) {
   }
 }
 
+/** Opções iguais (mesmo título e itens) aparecem uma vez só e a numeração fecha; sobrando uma, a refeição fica sem opções. */
+function semOpcoesRepetidas(dias) {
+  const chave = (o) => JSON.stringify([o.titulo, o.itens]);
+  for (const d of dias) for (const ms of Object.values(d.refeicoes)) for (const m of ms) {
+    if (!m.alternativas?.length) continue;
+    const vistas = new Set([chave(m)]);
+    const alts = m.alternativas.filter((a) => !vistas.has(chave(a)) && vistas.add(chave(a)));
+    if (!alts.length) { delete m.alternativas; delete m.numero; m.opcoes = ""; continue; }
+    const todas = [m, ...alts].sort((a, b) => (a.numero || 0) - (b.numero || 0));
+    todas.forEach((o, k) => { o.numero = k + 1; });
+    m.alternativas = alts;
+    m.opcoes = `Opção ${m.numero} de ${todas.length}`;
+  }
+}
+
 /**
  * Recebe o JSON (objeto ou texto) e devolve { plano, erros, avisos }.
  * Se houver erros, o plano não deve ser publicado.
@@ -238,6 +253,7 @@ export function normalizarPlano(entrada) {
   dias.sort((a, b) => a.data.localeCompare(b.data));
   if (!dias.length) erros.push(`"dias" está vazio`);
   opcoesPorRodizio(dias);
+  semOpcoesRepetidas(dias);
 
   const inicio = RE_DATA.test(j.inicio || "") ? j.inicio : dias[0]?.data;
   const fim = RE_DATA.test(j.fim || "") ? j.fim : dias[dias.length - 1]?.data;
@@ -470,13 +486,13 @@ export function estimarItens(m) {
 }
 
 /** Quanto foi comido da refeição: tira os itens de `fora` (nomes) e soma "outra coisa" (kcal aproximada). */
-export function consumido(m, fora = [], outraKcal = 0) {
-  if (!fora.length && !outraKcal) return { kcal: m.kcal, proteina: m.proteina, carbo: m.carbo, gordura: m.gordura };
+export function consumido(m, fora = [], outraKcal = 0, outraProt = 0) {
+  if (!fora.length && !outraKcal && !outraProt) return { kcal: m.kcal, proteina: m.proteina, carbo: m.carbo, gordura: m.gordura };
   const est = estimarItens(m);
   let kcal = 0, proteina = 0;
   m.itens.forEach((it, k) => { if (!fora.includes(it.nome)) { kcal += est[k].kcal; proteina += est[k].proteina; } });
   const parte = m.kcal ? kcal / m.kcal : 0; // carbo e gordura acompanham a fração de kcal
-  return { kcal: kcal + (Number(outraKcal) || 0), proteina, carbo: m.carbo == null ? null : m.carbo * parte, gordura: m.gordura == null ? null : m.gordura * parte };
+  return { kcal: kcal + (Number(outraKcal) || 0), proteina: proteina + (Number(outraProt) || 0), carbo: m.carbo == null ? null : m.carbo * parte, gordura: m.gordura == null ? null : m.gordura * parte };
 }
 
 export function totais(refeicoes) {
@@ -506,6 +522,13 @@ export function testesDoDia(plano, data, pid) {
   const out = [];
   for (const t of plano.testes) for (const d of t.doses) if (d.data === data && (!pid || !t.pessoa || t.pessoa === pid)) out.push({ teste: t, dose: d });
   return out;
+}
+
+/** O destaque do dia é um texto só para a família: "Teste FODMAP · GOS 3/3" fica só para quem está testando. */
+export function destaqueDe(destaque, temTeste) {
+  const partes = String(destaque || "").split(/\s*·\s*/).filter(Boolean);
+  const ehTeste = (t) => /teste|fodmap/i.test(t || "");
+  return partes.filter((t, i) => temTeste || !(ehTeste(t) || (/\d+\/\d+$/.test(t) && ehTeste(partes[i - 1])))).join(" · ");
 }
 
 export function notasDe(plano, secao, pid) {
@@ -601,7 +624,7 @@ export function agenda(plano) {
     const meals = {};
     for (const [pid, ms] of Object.entries(d.refeicoes)) {
       meals[pid] = ms.map((m) => ({
-        t: m.hora, name: m.nome, pre: m.titulo, sub: "", kcal: m.kcal,
+        t: m.hora, name: m.nome, pre: m.titulo, sub: "", kcal: m.kcal, tipo: m.tipo,
         items: m.itens.map((it) => [it.nome.toLowerCase(), fmtQtd(it.qtd, it.unid)].filter(Boolean).join(" ")),
         key: m.id,
       }));
@@ -610,5 +633,7 @@ export function agenda(plano) {
     const testes = plano.testes.flatMap((t) => t.doses.filter((x) => x.data === d.data).map((x) => ({ pessoa: t.pessoa, alimento: t.alimento || t.grupo, n: x.n, k: `${t.alimento || t.grupo}-${x.n}`, quantidade: x.quantidade, refeicao: x.refeicao })));
     days[d.data] = { wd: DIAS_SEMANA[diaSemana(d.data)], label: p0 ? plano.tiposDeDia[d.tipo[p0.id]] || "" : "", meals, testes };
   }
-  return { title: plano.titulo, method: "json", persons, days };
+  // água que cobra (Worker): meta do plano, peso do plano e se é criança (criança não recebe aviso)
+  const agua = Object.fromEntries(plano.pessoas.map((p) => [p.id, { meta: p.metas.agua || null, peso: p.peso?.atual || null, crianca: !!p.crianca }]));
+  return { title: plano.titulo, method: "json", persons, days, agua };
 }

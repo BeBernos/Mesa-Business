@@ -2,7 +2,7 @@
 
 *[Read in English](case-study.md)*
 
-**Papel:** produto, UX e engenharia, de ponta a ponta · **Período:** out/2026 – hoje, 10 versões · **Usuários:** uma
+**Papel:** produto, UX e engenharia, de ponta a ponta · **Período:** out/2026 – hoje, 20 versões · **Usuários:** uma
 família de verdade (dois adultos com planos diferentes e uma criança), todo dia
 
 ## O problema

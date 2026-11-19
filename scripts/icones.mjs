@@ -74,6 +74,43 @@ export const VARIANTES = {
       ${anel("#fff", [{ a: -78, cor: "#8FA3FF", brilho: true }, { a: -45, cor: "#FF7AC6", brilho: true }, { a: -12, cor: "#FF9D5C", brilho: true }])}
       <circle cx="${C}" cy="${C}" r="${DISCO}" fill="#15121F"/>${garfo("#fff")}`,
   },
+  // ---- 3.0: o mesmo desenho, na pele Órbita (fundo escuro, brilho da marca, pontos nas cores de cada um) ----
+  orbita: {
+    nome: "Órbita",
+    descricao: "Como o app 3.0: fundo quase preto com o brilho índigo e vinho, anel branco fino e os três pontos nas cores do Rafael, da Marina e do Theo.",
+    marca: ["#7B93FF", "#F06595"],
+    svg: () => `
+      <defs><radialGradient id="g1" cx=".12" cy=".08" r=".75"><stop offset="0" stop-color="#3442B8" stop-opacity=".9"/><stop offset="1" stop-color="#3442B8" stop-opacity="0"/></radialGradient>
+        <radialGradient id="g2" cx=".98" cy=".92" r=".7"><stop offset="0" stop-color="#7E1C55" stop-opacity=".85"/><stop offset="1" stop-color="#7E1C55" stop-opacity="0"/></radialGradient>
+        <filter id="blur"><feGaussianBlur stdDeviation="20"/></filter></defs>
+      <rect width="1024" height="1024" fill="#0B0B0D"/><rect width="1024" height="1024" fill="url(#g1)"/><rect width="1024" height="1024" fill="url(#g2)"/>
+      ${anel("#F3F2F5", [{ a: -78, cor: "#7B93FF", brilho: true }, { a: -45, cor: "#F06595", brilho: true }, { a: -12, cor: "#FF8A4C", brilho: true }])}
+      <circle cx="${C}" cy="${C}" r="${DISCO}" fill="#16151C"/>${garfo("#F3F2F5")}`,
+  },
+  orbitaGradiente: {
+    nome: "Órbita gradiente",
+    descricao: "Fundo escuro e o anel vira o gradiente do botão do app (azul → lilás); os três pontos brilham por cima.",
+    marca: ["#7B93FF", "#B57CFF"],
+    svg: () => `
+      <defs><linearGradient id="rg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7B93FF"/><stop offset="1" stop-color="#B57CFF"/></linearGradient>
+        <radialGradient id="g1" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#3442B8" stop-opacity=".55"/><stop offset="1" stop-color="#3442B8" stop-opacity="0"/></radialGradient>
+        <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter></defs>
+      <rect width="1024" height="1024" fill="#0B0B0D"/><rect width="1024" height="1024" fill="url(#g1)"/>
+      ${anel("url(#rg)", [{ a: -78, cor: "#7B93FF", brilho: true }, { a: -45, cor: "#F06595", brilho: true }, { a: -12, cor: "#FF8A4C", brilho: true }])}
+      <circle cx="${C}" cy="${C}" r="${DISCO}" fill="#16151C"/>${garfo("#fff")}`,
+  },
+  familia3: {
+    nome: "Família 3.0",
+    descricao: "O ícone de hoje, só afinado: mesmo gradiente, um pouco mais fundo, e os pontos nas cores novas de cada um (o do Theo fica laranja).",
+    marca: ["#3442B8", "#7E1C55"],
+    svg: () => `
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E3BA6"/><stop offset="1" stop-color="#6A1848"/></linearGradient>
+        <radialGradient id="hl" cx=".2" cy=".1" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter></defs>
+      <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#hl)"/>
+      ${anel("#fff", [{ a: -78, cor: "#7B93FF", brilho: true }, { a: -45, cor: "#F06595", brilho: true }, { a: -12, cor: "#FF8A4C", brilho: true }])}
+      <circle cx="${C}" cy="${C}" r="${DISCO}" fill="#15121F"/>${garfo("#fff")}`,
+  },
 };
 
 /** SVG completo. forma: "quadrado" (maskable/Android recorta), "arredondado" (preview e favicon). */
@@ -83,8 +120,8 @@ export function svgIcone(chave, forma = "quadrado") {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">${clip}<g ${clip ? 'clip-path="url(#cp)"' : ""}>${v.svg()}</g></svg>`;
 }
 
-// Identidade escolhida (out/2026): "familia".
-export const IDENTIDADE = "familia";
+// Identidade escolhida: "familia" (out/2026) → "orbitaGradiente" (nov/2026, Mesa 3.0).
+export const IDENTIDADE = "orbitaGradiente";
 
 /** Ícone monocromático da barra de status do Android (só o alfa conta): anel, garfo e os três pontos. */
 export function svgBadge() {

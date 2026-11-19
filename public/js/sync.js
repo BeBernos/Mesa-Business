@@ -57,15 +57,28 @@ export const log = {
   del(kind, day, person = "", k = "") {
     this._apply({ kind, day, person, k, v: null, deleted: 1, updated: Date.now(), local: true });
   },
+  /** Soma (água): o servidor soma em vez de sobrescrever, e um "+250" tocado na notificação não se perde.
+   *  Somas seguidas na fila viram uma; com um valor absoluto ainda na fila (versão anterior), segue absoluto. */
+  add(kind, day, person = "", k = "", delta = 0) {
+    const atual = Number(this.get(kind, day, person, k)?.v || 0);
+    const v = Math.max(0, Math.min(8000, atual + delta));
+    const kk = key(kind, day, person, k);
+    const antes = this.pending.find((p) => key(p.kind, p.day, p.person, p.k) === kk);
+    const op = { kind, day, person, k, v: String(v), deleted: 0, updated: Date.now(), local: true };
+    if (antes && antes.add === undefined) return this._apply(op);
+    // a soma que já está no ar não se junta (ela sai da fila quando o envio terminar): a nova vai separada
+    const voando = !!antes && (this._voando || []).includes(antes);
+    this._apply(op, (voando ? 0 : antes?.add || 0) + (v - atual), voando);
+  },
   toggle(kind, day, person, k) {
     if (this.get(kind, day, person, k)) this.del(kind, day, person, k); else this.set(kind, day, person, k, "1");
     return !!this.get(kind, day, person, k);
   },
-  _apply(op) {
+  _apply(op, add, manter = false) {
     const kk = key(op.kind, op.day, op.person, op.k);
     this.rows.set(kk, op);
-    this.pending = this.pending.filter((p) => key(p.kind, p.day, p.person, p.k) !== kk);
-    this.pending.push({ kind: op.kind, day: op.day, person: op.person, k: op.k, v: op.v, deleted: op.deleted });
+    if (!manter) this.pending = this.pending.filter((p) => key(p.kind, p.day, p.person, p.k) !== kk);
+    this.pending.push({ kind: op.kind, day: op.day, person: op.person, k: op.k, v: op.v, deleted: op.deleted, ...(add !== undefined ? { add } : {}) });
     this._save();
     this._emit();
     clearTimeout(this._t);
@@ -85,10 +98,11 @@ export const log = {
     if (!this.pending.length || this._pushing) return;
     this._pushing = true;
     const ops = this.pending.slice(0, 200);
+    this._voando = ops;
     try {
       await api("/api/log", { method: "POST", body: JSON.stringify({ ops, device: this.device }) });
-      const sent = new Set(ops.map((o) => key(o.kind, o.day, o.person, o.k) + (o.deleted ? "0" : o.v)));
-      this.pending = this.pending.filter((o) => !sent.has(key(o.kind, o.day, o.person, o.k) + (o.deleted ? "0" : o.v)));
+      // tira da fila exatamente o que foi mandado (o que chegou durante o envio continua)
+      this.pending = this.pending.filter((o) => !ops.includes(o));
       this._save();
       if (this.falhou) { this.falhou = false; this._emit(); }
     } catch (e) {
@@ -96,6 +110,7 @@ export const log = {
       if (!this.falhou) { this.falhou = true; this._emit(); }
     } finally {
       this._pushing = false;
+      this._voando = null;
     }
     if (this.pending.length) setTimeout(() => this.push(), 3000);
   },

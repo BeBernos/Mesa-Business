@@ -1,12 +1,13 @@
 // Service worker: offline, notificações e "compartilhar arquivo com o app".
-const VERSION = "v10";
+const VERSION = "v23";
 const SHELL = `pf-shell-${VERSION}`;
 const PLANS = "pf-plans";
 const API = "pf-api";
 const ASSETS = [
-  "/", "/css/app.css", "/fonts/inter.woff2", "/img/icons.svg", "/img/logo.svg", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/badge-96.png",
-  "/js/app.js", "/js/plan.js", "/js/ui.js", "/js/sync.js", "/js/state.js",
-  "/js/views/hoje.js", "/js/views/semana.js", "/js/views/compras.js", "/js/views/saude.js", "/js/views/ajustes.js", "/js/views/atualizar.js", "/js/views/bloqueio.js", "/js/views/novidades.js", "/js/views/busca.js",
+  "/", "/fonts/inter.woff2", "/img/icons.svg", "/img/logo.svg", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/badge-96.png",
+  "/js/plan.js", "/js/ui.js", "/js/sync.js", "/js/state.js", "/js/acoes.js",
+  "/v3/", "/v3/v3.css", "/v3/app.js", "/v3/ui.js", "/v3/views/hoje.js", "/v3/views/ajustes.js", "/v3/views/catalogo.js", "/v3/views/ficha.js", "/v3/views/cozinha.js", "/v3/views/outra.js", "/v3/views/mais.js", "/js/tratamento.js", "/v3/views/diario.js", "/js/diario.js", "/v3/views/plano.js", "/v3/views/compras.js", "/v3/views/saude.js", "/v3/views/atualizar.js", "/js/aparelho.js", "/v3/data/alimentos.json", "/v3/desenhos.js", "/fonts/fredoka.woff2", "/fonts/outfit.woff2",
+  "/js/views/bloqueio.js", "/js/views/novidades.js",
 ];
 
 self.addEventListener("install", (e) => {
@@ -80,7 +81,7 @@ self.addEventListener("fetch", (e) => {
   // Arquivos do app: rede primeiro (sempre a versão nova, sem misturar), cache se offline
   e.respondWith(
     caches.open(SHELL).then(async (c) => {
-      const key = req.mode === "navigate" ? "/" : req;
+      const key = req.mode === "navigate" ? (url.pathname.startsWith("/v3") ? "/v3/" : "/") : req; // as duas interfaces offline
       try {
         const res = await fetch(req);
         if (res.ok && res.type === "basic") c.put(key, res.clone());
@@ -103,7 +104,9 @@ self.addEventListener("push", (e) => {
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: "Mesa", body: e.data && e.data.text() }; }
   const actions = [];
   if (d.eat) actions.push({ action: "eat", title: "✅ Comi" });
-  if (d.snooze) actions.push({ action: "snooze", title: "⏰ 15 min" });
+  // refeição com dose do tratamento: "Tomei" no lugar do adiar (o Android mostra no máximo 2 botões)
+  if (d.doses?.length) actions.push({ action: "tomei", title: "💊 Tomei" });
+  else if (d.snooze) actions.push({ action: "snooze", title: "⏰ 15 min" });
   // perguntas da Mesa proativa: até 2 respostas como botões (o Android mostra no máximo 2)
   (d.respostas || []).slice(0, 2).forEach((r, i) => actions.push({ action: `r${i}`, title: r.titulo }));
   e.waitUntil(
@@ -140,6 +143,10 @@ self.addEventListener("notificationclick", (e) => {
     );
     return;
   }
+  if (e.action === "tomei" && d.doses?.length) {
+    e.waitUntil(gravar(d.doses, d));
+    return;
+  }
   if (e.action === "snooze") {
     e.waitUntil(
       (async () => {
@@ -159,13 +166,13 @@ self.addEventListener("notificationclick", (e) => {
   const resposta = /^r\d$/.test(e.action) ? d.respostas?.[+e.action.slice(1)] : null;
   if (resposta && !resposta.abrir) {
     // responde sem abrir o app: grava e avisa a tela, se estiver aberta
-    e.waitUntil(gravar(resposta.ops));
+    e.waitUntil(gravar(resposta.ops, d));
     return;
   }
   const url = resposta?.abrir || d.url || "/";
   e.waitUntil(
     (async () => {
-      if (resposta) await gravar(resposta.ops);
+      if (resposta) await gravar(resposta.ops, d);
       const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const c of list) {
         if (new URL(c.url).origin === location.origin) {
@@ -179,9 +186,20 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
-async function gravar(ops) {
+async function gravar(ops, d = {}) {
   if (!ops?.length) return;
-  await fetch("/api/log", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ ops }) });
+  let ok = false;
+  try {
+    const r = await fetch("/api/log", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ ops }) });
+    ok = r.ok;
+  } catch (err) {}
+  if (!ok) {
+    // sem internet ou sessão vencida: a resposta não foi anotada — avisa em vez de perder em silêncio
+    await self.registration.showNotification("Não consegui anotar", {
+      body: "Toque para abrir a Mesa e anotar por lá.", tag: d.tag || "falhou", icon: "/icons/icon-192.png", badge: "/icons/badge-96.png", data: { url: d.url || "/" },
+    });
+    return;
+  }
   for (const c of await self.clients.matchAll({ type: "window" })) c.postMessage({ type: "log" });
 }
 
