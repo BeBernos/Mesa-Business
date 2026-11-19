@@ -1,0 +1,26 @@
+# Grava as imagens do README (capa e GIF) a partir da demonstração e deixa no artefato "imagens" para conferir e subir.
+name: Imagens do README
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/imagens*"]
+jobs:
+  imagens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Navegador e ffmpeg
+        run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium && sudo apt-get install -y ffmpeg
+      - run: node scripts/gravar-imagens.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagens
+          path: |
+            docs/images/capa.png
+            docs/images/demo.gif
+            _imagens/*.png
+          retention-days: 7
