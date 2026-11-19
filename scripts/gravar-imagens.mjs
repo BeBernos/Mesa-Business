@@ -94,14 +94,25 @@ async function abrir(p) {
 {
   const ctx = await browser.newContext({ ...celular, deviceScaleFactor: 1, recordVideo: { dir: tmp, size: { width: 390, height: 844 } } });
   const p = await ctx.newPage();
+  const t0 = Date.now(); // o vídeo começa com a página
   await abrir(p);
+  // a demo já traz o café de hoje marcado: desmarca fora do trecho que vai para o GIF (e some com o aviso)
+  const feito = p.locator(".tl .meal [data-act=comi][aria-pressed=true]").first();
+  if (await feito.count()) {
+    await feito.click();
+    await pausa(300);
+    await p.evaluate(() => { const t = document.getElementById("toast"); t.classList.remove("on"); try { t.hidePopover(); } catch (e) {} });
+  }
+  await pausa(700);
+  const corte = ((Date.now() - t0) / 1000).toFixed(2);
   await pausa(800);
   await p.click(".tl [data-act=ficha] >> nth=0");
   await p.waitForSelector("dialog.folha[open]");
   await pausa(1200);
   const opcao2 = p.locator("dialog.folha [data-act=trocar][data-i='1']");
   if (await opcao2.count()) { await opcao2.scrollIntoViewIfNeeded(); await pausa(500); await opcao2.click(); await pausa(1200); }
-  await p.click("dialog.folha [data-act=comi-ficha]");
+  const comi = p.locator("dialog.folha [data-act=comi-ficha]");
+  if (!/desmarcar/i.test(await comi.textContent())) await comi.click(); else await p.keyboard.press("Escape");
   await pausa(1400);
   for (let i = 0; i < 2; i++) { await p.click('[data-act=agua][data-v="250"]'); await pausa(900); }
   await pausa(600);
@@ -113,8 +124,8 @@ async function abrir(p) {
   await pausa(1800);
   await ctx.close();
   const video = readdirSync(tmp).find((n) => n.endsWith(".webm"));
-  // os primeiros ~0,6 s são a página carregando: ficam de fora
-  execFileSync("ffmpeg", ["-y", "-ss", "0.6", "-i", join(tmp, video), "-vf",
+  // o começo (página carregando e o café desmarcado) fica de fora
+  execFileSync("ffmpeg", ["-y", "-ss", corte, "-i", join(tmp, video), "-vf",
     "fps=12,scale=360:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
     join(saida, "demo.gif")], { stdio: "inherit" });
 }
