@@ -20,10 +20,10 @@ targets, the family shares one shopping list, and next month's plan is written b
 month actually went.**
 
 It was built for a real family and has been used every day since October 2026: two adults and a child on three
-different plans, two phones, one kitchen. Ten releases later it also talks to the family's training app (Pulse) and
+different plans, two phones, one kitchen. Twenty releases later it also talks to the family's training app (Pulse) and
 grocery app (Cesta).
 
-**At a glance:** 10 releases · used daily since Oct 2026 · 3 people on different plans · 0 runtime dependencies · 27 Worker tests + 2 end-to-end suites on every PR
+**At a glance:** 20 releases · used daily since Oct 2026 · 3 people on different plans · 0 runtime dependencies · 43 Worker and engine tests + an end-to-end suite on every PR
 
 > The live demo runs with a **fictitious family** (Rafael, Marina and Theo) and a two-week plan that always moves with
 > today's date. Everything happens in your browser — the server API is simulated, nothing is sent anywhere.
@@ -90,8 +90,8 @@ can only be framed by the companion training app, and the MCP endpoint lives beh
   fake phone that decrypts real payloads.
 - **One engine, two runtimes** — the same plan module runs in the browser and in the Worker, so the server can answer
   "what's for lunch?" for the AI and the cron.
-- **Tested like a product** — 27 Worker/engine tests on Node's built-in runner (in-memory KV, D1 on `node:sqlite`), plus
-  two Playwright end-to-end suites (passkeys with a virtual authenticator, offline, gestures, large-font layout at 280 px,
+- **Tested like a product** — 43 Worker/engine tests on Node's built-in runner (in-memory KV, D1 on `node:sqlite`), plus
+  a Playwright end-to-end suite (passkeys with a virtual authenticator, offline, gestures, large-font layout at 280 px,
   desktop). All of it runs on every pull request.
 - **Accessible** — screen-reader labels on icon buttons, layouts checked with the Android large-font setting, no colour-only
   states.

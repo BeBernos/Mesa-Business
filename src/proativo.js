@@ -3,7 +3,7 @@
 // Cada resposta já leva as gravações prontas ("ops" do registro) — o service worker só repassa.
 // Limites (no Worker): no máximo 2 por pessoa por dia, cada pergunta uma vez por dia, só nos horários abaixo.
 
-export const HORARIOS = ["10:00", "10:30", "15:30", "19:00", "20:00", "21:00"];
+export const HORARIOS = ["10:00", "10:30", "15:30", "19:00", "20:00", "21:30"];
 
 const somaDias = (d, n) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const difDias = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 864e5);
@@ -75,13 +75,14 @@ export function perguntasDoMomento(f) {
     }
   }
 
-  if (hm === "20:00" && dow === 0 && !f.linhas.some((l) => l.kind === "feedback" && l.k === "semana" && l.day >= somaDias(hoje, -6))) {
+  if (hm === "20:00" && dow === 0 && !f.linhas.some((l) => ((l.kind === "feedback" && l.k === "semana") || l.kind === "week") && l.day >= somaDias(hoje, -6))) {
     out.push(pergunta("semana", "Fecha a semana? Leva 1 minuto", "O que funcionou, o que não funcionou e o que mudar — é o que o Claude lê no próximo plano.", [
       { titulo: "Fechar agora", abrir: "/?aba=saude&fechamento=1" },
     ], "/?aba=saude&fechamento=1"));
   }
 
-  if (hm === "21:00" && !tem("feedback", hoje, "dia") && !tem("checkin", hoje, "dia")) {
+  // 21:30: a mesma hora do cartão "Como foi o dia?" da nova Mesa (que grava "day")
+  if (hm === "21:30" && !tem("feedback", hoje, "dia") && !tem("checkin", hoje, "dia") && !tem("day", hoje)) {
     out.push(pergunta("noite", `Como foi o dia, ${nome}?`, "Energia, fome e intestino: 10 segundos que ajudam o próximo plano.", [
       { titulo: "👍 Foi bem", ops: [op("checkin", hoje, "dia", "bom")] },
       { titulo: "👎 Foi difícil", ops: [op("checkin", hoje, "dia", "ruim")], abrir: "/?aba=saude" },

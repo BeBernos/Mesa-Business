@@ -1,9 +1,97 @@
-// Novidades: aparece uma vez por versão ao abrir o app; lista completa em Ajustes → App → Novidades.
+// Novidades: aparecem uma vez por versão ao abrir o app (janela em public/v3/views/ajustes.js); lista completa em Ajustes → App.
 // Regra: TODA atualização sobe VERSAO e ganha uma entrada no topo de NOVIDADES (linguagem simples).
-import { esc, icon, openSheet, closeSheet, sheetHead } from "../ui.js";
-import { LS } from "../sync.js";
 
 export const NOVIDADES = [
+  {
+    versao: "3.0.1", data: "2026-11-19", titulo: "Cada um com o seu",
+    itens: [
+      "**Cada pessoa vê só o que é dela:** o teste FODMAP do dia aparece só para quem está testando, e a tela do Theo não mostra mais as regras dos adultos.",
+      "**Comi outra coisa:** dá para ir somando vários itens, cada um com a sua quantidade — até o que não está na lista (sem kcal).",
+      "**Pizza de pepperoni** (e a da Pizza Hut) entrou na lista.",
+      "**Opções sem repetição:** quando as opções de uma refeição são iguais, aparecem uma vez só.",
+      "**Entrada nova:** ao abrir, o prato da Mesa se desenha e os pontos da família entram; a digital só é pedida quando você toca no botão.",
+      "**Ícone novo:** o mesmo prato com garfo, agora escuro como o app e com o anel em gradiente. No Android ele troca sozinho em alguns dias (ou reinstale a Mesa para ver na hora).",
+    ],
+  },
+  {
+    versao: "3.0.0", data: "2026-11-19", titulo: "Mesa 3.0: agora é só a nova",
+    itens: [
+      "**A Mesa antiga saiu de vez.** Tudo o que ela fazia está na nova; os dados são os mesmos.",
+      "**Ajustes completos:** de quem são os avisos deste celular, notificações (com os próximos avisos e o teste), lembretes, água, tratamento, planos antigos, o conector do Claude, digital e trava.",
+      "**Subir o plano pelo app:** Ajustes → Plano → escolher o arquivo ou colar o texto, conferir a prévia e publicar. “Compartilhar → Mesa” também cai aqui.",
+      "**Diário mais completo:** peso com gráfico, testes de reintrodução, comida × sintoma, sintomas anotados (dá para apagar e desfazer) e suplementos.",
+      "**No computador:** a Hoje fica em duas colunas — o painel do dia de um lado, as refeições do outro.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.8", data: "2026-11-19", titulo: "A nova Mesa chegou",
+    itens: [
+      "**A Mesa mudou de cara:** escura, mais leve, com tudo do dia num lugar só — refeições, água, sintomas e o tratamento.",
+      "**Abas:** Hoje (o dia), Plano (a semana em grade e o fechamento do mês), Compras (a mesma lista de sempre) e Diário (como foi o dia e a semana, e as análises do Claude).",
+      "**Novidades:** botão **+** para anotar sintoma, água ou efeito; “comi outra coisa” com busca de lanches e pratos; lembrete de água que cobra; a tela do Theo com o Ursinho.",
+      "**Nada se perdeu:** são os mesmos dados. Se preferir a de antes, Ajustes → “Voltar para a Mesa antiga”.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.7", data: "2026-11-19", so: "v3", titulo: "Plano e Compras na nova Mesa",
+    itens: [
+      "**Plano:** a semana em grade, uma bolinha por refeição (comeu, passou sem marcar, trocada) e a água do dia. Toque no dia para abrir na Hoje. Dá para buscar (“quando tem frango?”) e imprimir a semana.",
+      "**Fechar o mês:** um resumo de cada um (adesão, água, peso, sintomas) e o botão que abre o Claude com o pedido do próximo plano já escrito.",
+      "**Compras:** por seção do mercado, “já tenho em casa”, itens extras, seguir as trocas e o custo pela Cesta. É a mesma lista da Mesa antiga — dá para dividir no mercado.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.6", data: "2026-11-19", so: "v3", titulo: "Diário e a análise do Claude",
+    itens: [
+      "**Aba Diário:** os últimos dias (refeições, água, sintomas e como você fechou o dia), um gráfico dos sintomas por semana com o tratamento ao fundo e as análises do Claude.",
+      "**Fechar o dia em 20 segundos:** humor, fome, energia, como foi o intestino (escala de Bristol) e uma nota de 0 a 3 para cada sintoma. Na Hoje, o cartão “Como foi o dia?” aparece a partir das 21:30; no domingo à noite, “Como foi a semana?”.",
+      "**Pedir análise:** abre o Claude com o pedido já escrito — é só enviar. Com o conector ligado, ele lê a semana e grava a resposta aqui; ela aparece na Hoje até você ler. Sem conector: “Copiar relatório” e depois “Colar resposta”.",
+      "Se os sintomas piorarem 3 semanas seguidas, o Diário avisa para procurar um médico.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.5", data: "2026-11-19", so: "v3", titulo: "Sintomas e tratamento no dia",
+    itens: [
+      "**Botão + na Hoje:** anote na hora um sintoma (inchaço, gases, dor, refluxo, cansaço…) com a intensidade, um copo d'água ou um efeito colateral. Tudo aparece na linha do tempo, no horário.",
+      "**Tratamento:** em Ajustes, cadastre o tratamento (ex.: berberina + alicina) com as doses de cada refeição. As doses aparecem junto da refeição com **Tomei**, e o lembrete da refeição ganha o botão **💊 Tomei**. Nos 3 últimos dias a Mesa pergunta se estende, para ou começa a reintrodução.",
+      "**Sinais de alerta** (sangue nas fezes, febre, perda de peso sem querer, dor que acorda à noite): a Mesa mostra com clareza para procurar um médico.",
+      "O Claude passa a ver o tratamento, as doses tomadas e os efeitos colaterais quando analisar.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.4", data: "2026-11-19", so: "v3", titulo: "Comi outra coisa, em segundos",
+    itens: [
+      "**Comeu fora do plano?** Na ficha da refeição (ou segurando o cartão) toque em **Comeu outra coisa**: busque na lista — Big Mac, coxinha, açaí, pizza por fatia, marmita… — escolha quantas porções e pronto.",
+      "**Não achou?** Use **Estimar**: diga o tipo (lanche, prato, doce, bebida, petisco) e o tamanho (leve, normal, exagerei). A Mesa conta o meio da faixa no anel.",
+      "Tudo fica marcado como **estimativa**: o Claude vê o que você comeu no lugar do plano e ajusta quando analisar.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.3", data: "2026-11-19", titulo: "A Mesa lembra da água",
+    itens: [
+      "**Lembrete de água (Rafael e Marina):** se a água do dia ficar para trás, a Mesa avisa — no máximo a cada 1h30 quando falta pouco e a cada 45 min quando falta muito. Nada de madrugada, nada logo depois de você anotar e nada depois de bater a meta.",
+      "**+250 e +500 na própria notificação:** anota sem abrir o app e soma com o que já estava anotado.",
+      "**Dá para desligar:** Ajustes → Notificações → “Lembrar de beber água”. Na nova Mesa, Ajustes também tem os horários de acordar e dormir.",
+      "Na nova Mesa, a garrafa mostra quantos **dias seguidos** você bateu a meta (a partir de 3).",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.2", data: "2026-11-19", so: "v3", titulo: "Hoje completa e a tela do Theo",
+    itens: [
+      "**Tela do Theo com o Ursinho:** na página do Theo, cada refeição tem um bonequinho, e o urso mostra como ele comeu — toque em **comeu bem**, **comeu pouco** ou **não quis**. A alergia fica sempre à vista, num balão do urso.",
+      "**Ficha da refeição:** toque no cartão para ver os ingredientes (cru e pronto), marcar o que não comeu, anotar que comeu outra coisa ou trocar de opção.",
+      "**Segure uma refeição** para as ações rápidas, sem abrir a ficha. O círculo do cartão marca “comi”.",
+      "**Avisos do dia, preparo e modo cozinha** voltaram para a Hoje. Deslize para os lados para trocar de dia e puxe para baixo para atualizar.",
+    ],
+  },
+  {
+    versao: "3.0.0-beta.1", data: "2026-11-18", titulo: "Prévia da nova Mesa",
+    itens: [
+      "**Uma Mesa nova está chegando:** escura, mais leve e com tudo do dia num lugar só. Para dar uma olhada, vá em Ajustes → App → **Experimentar a nova Mesa**.",
+      "Por enquanto ela mostra o **Hoje** (refeições, água, kcal e proteína). As outras abas abrem aqui, na Mesa de sempre.",
+      "**Nada se perde:** as duas usam os mesmos dados. Para voltar, Ajustes da nova → “Voltar para a Mesa antiga”.",
+    ],
+  },
   {
     versao: "2.7.0", data: "2026-11-12", titulo: "Pulse e Cesta conversando com a Mesa",
     itens: [
@@ -93,27 +181,8 @@ export const NOVIDADES = [
 ];
 export const VERSAO = NOVIDADES[0].versao;
 
-const negrito = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-
-function lista(entradas) {
-  return entradas.map((n) => `<div class="section-title" style="margin-top:18px"><h2>${esc(n.versao)} · ${esc(n.titulo)}</h2><span class="faint" style="font-size:12px">${n.data.slice(8, 10)}/${n.data.slice(5, 7)}</span></div>
-    <div class="stack">${n.itens.map((t) => `<div class="note">${icon("sparkles")}<div class="md">${negrito(t)}</div></div>`).join("")}</div>`).join("");
-}
-
-/** Abre a janela com o que mudou desde a última versão vista neste celular. Devolve true se abriu. */
-export function mostrarSeNovo({ aparelhoNovo = false, depois } = {}) {
-  const visto = LS.get("app_versao_vista", null);
-  if (aparelhoNovo || visto === VERSAO) { LS.set("app_versao_vista", VERSAO); return false; }
+/** Entradas desde a versão vista (`so: "v3"` marcava as da fase de teste; hoje todas valem). */
+export function novasDesde(visto) {
   const i = NOVIDADES.findIndex((n) => n.versao === visto);
-  abrir(i > 0 ? NOVIDADES.slice(0, i) : NOVIDADES.slice(0, 1), depois);
-  return true;
+  return (i > 0 ? NOVIDADES.slice(0, i) : NOVIDADES.slice(0, 1));
 }
-
-export function abrir(entradas = NOVIDADES, depois) {
-  LS.set("app_versao_vista", VERSAO);
-  openSheet(`${sheetHead("Novidades da Mesa", `versão ${VERSAO}`)}
-    <div class="sb">${lista(entradas)}<div class="gap-m"></div></div>
-    <div class="foot"><button class="btn primary block" data-act="close-sheet">Entendi</button></div>`, { onClose: depois });
-}
-
-export const acts = { novidades: () => abrir() };

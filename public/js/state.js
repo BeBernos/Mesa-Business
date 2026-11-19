@@ -72,7 +72,7 @@ export function resumoDia(data, pid) {
   const meta = metaDoDia(S.plano, pid, naoTreinou ? "D" : tipo);
   const feito = totais(ms.filter((m) => comeu(data, pid, m.id)).map((m) => {
     const p = parcial(data, pid, m.id);
-    return p ? consumido(m, p.fora || [], p.outraKcal) : m;
+    return p ? consumido(m, p.fora || [], p.outraKcal, p.outraProt) : m;
   }));
   return { dia: d, refeicoes: ms, tipo, meta, plano: totais(ms), feito, naoTreinou, pulse };
 }

@@ -2,7 +2,7 @@
 
 *[Leia em português](case-study.pt-BR.md)*
 
-**Role:** product, UX and engineering, end to end · **Period:** Oct 2026 – today, 10 releases · **Users:** a real family
+**Role:** product, UX and engineering, end to end · **Period:** Oct 2026 – today, 20 releases · **Users:** a real family
 (two adults on different plans, one child), every day
 
 ## The problem

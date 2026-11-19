@@ -3,6 +3,7 @@
 // Nada sai do navegador: o registro (refeições, água, peso…) fica no localStorage deste aparelho.
 import { VERSAO } from "./views/novidades.js";
 import { normalizarPlano } from "./plan.js";
+import { cfgTratamento } from "./tratamento.js";
 
 const TZ = "America/Sao_Paulo";
 const hoje = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ });
@@ -86,6 +87,18 @@ async function api(path, init = {}) {
   if (/^\/devices\/[^/]+$/.test(p)) {
     if (m === "PUT") LS.set("demo_cfg", { ...CFG(), ...body, id: device() });
     return json({ ...CFG(), id: device() });
+  }
+  // Mesa 3.0: tratamento, análises do Claude e lembrete de água (por pessoa, guardados neste navegador)
+  const porPessoa = /^\/(tratamento|analises|agua-cfg)\/([\w-]+)(?:\/([\w-]+)\/lida)?$/.exec(p);
+  if (porPessoa) {
+    const [, tipo, pid, lida] = porPessoa, chave = `demo_${tipo}_${pid}`;
+    const padrao = tipo === "agua-cfg" ? { ligado: true, acorda: "07:00", dorme: "22:00" } : tipo === "tratamento" ? null
+      : pid === "rafael" ? [{ id: "demo1", data: dia(-1), lida: false, titulo: "Semana 2 · como foi", texto: "**Adesão de 92%** e água na meta em 5 de 7 dias.\n\nO peso caiu 0,3 kg na média de 3 pesagens, dentro do esperado para manter recompondo. Os gases leves de terça vieram depois do jantar com feijão: na próxima semana vale manter o remolho e anotar de novo." }] : [];
+    if (m === "DELETE") { localStorage.removeItem(chave); return json({ ok: true }); }
+    if (tipo === "analises" && lida) { LS.set(chave, LS.get(chave, padrao).map((a) => (a.id === lida ? { ...a, lida: true } : a))); return json({ ok: true }); }
+    if (tipo === "analises" && m === "POST") { const a = { id: `a${Date.now()}`, data: hoje(), titulo: body.titulo, texto: body.texto, lida: true, colada: true }; LS.set(chave, [a, ...LS.get(chave, padrao)]); return json(a); }
+    if (m === "PUT") { const v = tipo === "tratamento" ? cfgTratamento(body) : { ...LS.get(chave, padrao), ...body }; LS.set(chave, v); return json(v); }
+    return json(LS.get(chave, padrao));
   }
   if (p === "/mcp") return json({ url: `${location.origin}${base}mcp/endereco-de-demonstracao` });
   if (p === "/vapid" || p.startsWith("/passkey")) return json({ error: "Indisponível na demonstração" }, 400);
