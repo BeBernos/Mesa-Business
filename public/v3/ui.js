@@ -74,8 +74,8 @@ export function refeicao(m, { feita = false, semKcal = false, antes = "", depois
 /** Cartão da refeição da vez: itens com porção à direita, "Comi" no degradê, ações secundárias como texto. */
 export function cartaoDaVez(m, { semKcal = false, acoes = [], go = "" } = {}) {
   return `<div class="now" aria-label="Agora: ${esc(m.nome)}"><span class="t">AGORA · ${esc(m.hora)}${!semKcal && m.kcal != null ? ` · ${fmt(m.kcal)} kcal` : ""}</span>
-    <button class="n corpo" data-act="ficha" data-m="${esc(m.id)}">${esc(m.nome)}</button>
-    <ul>${(m.itens || []).map(([a, b]) => `<li><span>${esc(a)}</span><span class="num">${esc(b)}</span></li>`).join("")}</ul>
+    <button class="corpo" data-act="ficha" data-m="${esc(m.id)}" aria-label="Abrir ${esc(m.nome)}: opções, só parte, outra coisa"><span class="n">${esc(m.nome)}</span>
+      <span class="itens">${(m.itens || []).map(([a, b]) => `<span class="li"><span>${esc(a)}</span><span class="num">${esc(b)}</span></span>`).join("")}</span></button>
     <div class="go">${go || `<button class="btn cta" data-act="comi" data-m="${esc(m.id)}">Comi</button>`}${go ? "" : acoes.map((a) => a.href
       ? `<a class="btn txt" href="${esc(a.href)}">${esc(a.rotulo)}</a>` : `<button class="btn txt" data-act="${esc(a.act)}" data-m="${esc(m.id)}">${esc(a.rotulo)}</button>`).join("")}</div></div>`;
 }

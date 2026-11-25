@@ -71,6 +71,14 @@ await pausa(200);
 ok((await feitas()) === c0, "e o desfazer desmarca");
 
 // ---------- ficha da refeição ----------
+// o cartão do "agora" abre a ficha tocando em qualquer parte (nome ou itens), como as outras refeições
+if (await p.isVisible(".now .itens")) {
+  await p.click(".now .itens");
+  await p.waitForSelector("dialog.folha[open]");
+  ok(true, "tocar nos itens do cartão 'agora' abre a ficha");
+  await p.keyboard.press("Escape");
+  await pausa(300);
+}
 const cafe = await p.getAttribute(".tl [data-act=ficha] >> nth=0", "data-m");
 await p.click(".tl [data-act=ficha] >> nth=0");
 await p.waitForSelector("dialog.folha >> text=Ingredientes");
@@ -442,6 +450,10 @@ await p.press(".compras [name=extra]", "Enter"); // o Enter do teclado do celula
 await pausa(200);
 ok(await p.isVisible(".compras >> text=Papel-toalha"), "dá para adicionar um item extra");
 ok(await p.isVisible(".compras [data-act=cmp-trocas]"), "a lista tem a opção de seguir as trocas");
+await p.click('.compras [data-act=cmp-semana][data-n^="m:"] >> nth=0');
+await pausa(200);
+const mesNome = await p.getAttribute('.compras [data-act=cmp-semana][data-n^="m:"] >> nth=0', "aria-label");
+ok((await p.getAttribute('.compras [data-act=cmp-semana][data-n^="m:"] >> nth=0', "aria-pressed")) === "true" && (await p.isVisible(`.compras >> text=${mesNome} ·`)), "Compras: dá para ver a lista do mês");
 await p.evaluate(() => { location.hash = "hoje"; });
 
 // ---------- computador: Hoje em duas colunas, nada vaza para os lados ----------
@@ -475,6 +487,7 @@ await p.evaluate(() => { location.hash = "ajustes"; });
 await p.click("[data-act=aj-menu]").catch(() => {});
 await p.waitForSelector("[data-act=aj-sec][data-s=avisos]");
 await shot("v3-95-ajustes");
+ok(await p.evaluate(() => { const b = document.querySelector(".perfil"), av = b?.querySelector(".av"); return !!av && getComputedStyle(b).display === "flex" && av.getBoundingClientRect().width >= 40; }), "Ajustes: o cartão deste celular tem avatar e fica em linha");
 await p.click("[data-act=aj-sec][data-s=celular]");
 await p.click("[data-act=aj-pessoa][data-p=marina]");
 await pausa(800);

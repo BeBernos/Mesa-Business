@@ -208,8 +208,9 @@ export function render() {
   const vp = c.viewPerson;
   const p = permissao();
   const alerta = p === "default" || (p === "granted" && !c.hasPush) ? `<div class="glass card aviso-dia alerta lado-a-lado"><span><b>Notificações desligadas.</b> Sem elas, os horários das refeições não chegam neste celular.</span><button class="btn cta" data-act="aj-ativar">Ativar</button></div>` : "";
-  let html = `<button class="glass card perfil" data-act="aj-sec" data-s="celular"><span class="av" style="--pc:${vp ? cor(vp) : "var(--fg3)"}">${esc((vp ? nomeP(vp) : "?")[0])}</span>
-    <span class="grow"><b>${esc(c.name || "Este celular")}</b><div class="sub">${(c.persons || []).length ? `Avisa ${esc((c.persons || []).map(nomeP).join(", "))}` : "Escolha de quem são os avisos"}${vp ? ` · abre em ${esc(nomeP(vp))}` : ""}</div></span>${icon("chevron-right")}</button>${alerta}<div class="rows">`;
+  let html = `<button class="glass perfil" style="--pc:${vp ? cor(vp) : "var(--fg3)"}" data-act="aj-sec" data-s="celular" aria-label="Este celular: de quem são os avisos e em quem o app abre">
+    <span class="av" aria-hidden="true">${esc((vp ? nomeP(vp) : "?")[0])}</span>
+    <span class="grow"><b>${esc(c.name || "Este celular")}</b><span class="sub" style="display:block">${vp ? `Abre em ${esc(nomeP(vp))}` : "Escolha em quem o app abre"} · ${(c.persons || []).length ? `avisa ${esc((c.persons || []).map(nomeP).join(", "))}` : "sem avisos escolhidos"}</span></span>${icon("chevron-right")}</button>${alerta}<div class="rows">`;
   for (const s of SECOES) {
     if (s.grupo) { html += `</div><div class="rows" style="margin-top:.75rem">`; continue; }
     html += `<button class="row" data-act="aj-sec" data-s="${s.id}">${icon(s.ic)}<span class="grow"><div>${s.t}</div><div class="sub">${esc(s.r(c))}</div></span>${icon("chevron-right")}</button>`;

@@ -480,7 +480,9 @@ async function writeLog(req, env) {
   const now = Date.now();
   const stmts = [];
   for (const [i, o] of ops.slice(0, 200).entries()) {
-    if (!o || !KINDS.has(o.kind) || !/^\d{4}-\d{2}-\d{2}$/.test(o.day || "")) continue;
+    // a lista de compras também guarda por período: "tudo-AAAA-MM-DD" (plano inteiro) e "mes-AAAA-MM" (mês do calendário)
+    const compras = o?.kind === "shop" || o?.kind === "shopx";
+    if (!o || !KINDS.has(o.kind) || !(/^\d{4}-\d{2}-\d{2}$/.test(o.day || "") || (compras && /^(tudo-\d{4}-\d{2}-\d{2}|mes-\d{4}-\d{2})$/.test(o.day || "")))) continue;
     if (o.kind === "water" && o.add !== undefined) {
       // "+250" da notificação: soma no servidor, para não sobrescrever um copo anotado no app nesse meio-tempo
       const add = Math.round(Number(o.add));

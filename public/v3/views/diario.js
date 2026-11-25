@@ -64,7 +64,8 @@ function resumoSemana(pid) {
   return {
     de: seg, ate: dom, dias: ds.length,
     adesao: soma("total") ? Math.round((soma("feitas") / soma("total")) * 100) : null,
-    kcal: media("kcal"), prot: media("prot"), metaKcal: comPlano[0]?.metaKcal ?? null,
+    // criança não conta caloria (a Mesa só anota se comeu bem, pouco ou recusou)
+    ...(S.plano?.pessoas.find((x) => x.id === pid)?.crianca ? { kcal: null, prot: null, metaKcal: null } : { kcal: media("kcal"), prot: media("prot"), metaKcal: comPlano[0]?.metaKcal ?? null }),
     agua: ds.length ? Math.round(ds.reduce((a, d) => a + d.agua, 0) / ds.length) : 0,
     peso: pesoRecente(pid), sintomas: fechados.length ? Math.round((fechados.reduce((a, d) => a + notaSintomasDia(d.fechamento), 0) / fechados.length) * 10) / 10 : null,
     anotados: ds.reduce((a, d) => a + d.sintomas.length, 0),

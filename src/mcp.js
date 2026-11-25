@@ -24,7 +24,7 @@ export const REGRAS = `Formato "plano-familia/2" (JSON). Regras:
   Item também pode ser objeto {"nome","qtd","unid","kcal","proteina"}: kcal/proteína por item são opcionais e deixam exato o
   "comi só parte" (sem eles, a Mesa estima). Vale mandar nos itens que mais pesam (arroz, carne, azeite, pasta de amendoim).
 - Toda refeição: hora, nome (o momento: "Café da manhã", "Almoço"...), titulo (o prato), kcal e proteina (números), itens.
-  Opcionais: carbo, gordura, nota, familia (true = mesma comida da família, só muda a porção), tipo (cafe|almoco|jantar|lanche|ceia|treino).
+  Sempre preencha também carbo e gordura (g) de cada refeição e de cada modelo — sem eles a Mesa só consegue estimar pelos ingredientes. Opcionais: nota, familia (true = mesma comida da família, só muda a porção), tipo (cafe|almoco|jantar|lanche|ceia|treino).
 - "modelos" define refeições que se repetem; use {"hora":"07:00","modelo":"id"}. "alternativas": ["id", ...] dá outras opções
   para o mesmo horário (a pessoa troca no app; as calorias acompanham; a lista de compras segue a principal).
 - A soma do dia de cada pessoa deve ficar a ±5% da meta do tipo de dia.

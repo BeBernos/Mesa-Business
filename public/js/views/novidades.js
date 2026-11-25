@@ -3,6 +3,16 @@
 
 export const NOVIDADES = [
   {
+    versao: "3.0.2", data: "2026-11-25", titulo: "Agora, carbo e o mês",
+    itens: [
+      "**Cartão do agora:** tocar em qualquer parte dele abre a refeição, com as opções, “só parte” e “outra coisa”, como nas outras.",
+      "**Carbo e gordura voltaram:** o plano de dezembro veio sem esses números; a Mesa agora calcula pelos ingredientes (aproximado) até o próximo plano trazer os valores do Claude.",
+      "**Compras do mês:** além de Tudo e das semanas, dá para ver a lista de cada mês (Nov, Dez, Jan). E a lista de Tudo agora sincroniza entre os celulares — antes ficava só no aparelho.",
+      "**Ajustes:** o cartão deste celular ficou com a cara do app, com a inicial de quem ele abre.",
+      "**Correções:** o “agora” segue o horário ajustado pelo treino do Pulse, o Diário da criança não mostra calorias e o app não trava mais quando chega um plano novo com a Mesa bloqueada.",
+    ],
+  },
+  {
     versao: "3.0.1", data: "2026-11-19", titulo: "Cada um com o seu",
     itens: [
       "**Cada pessoa vê só o que é dela:** o teste FODMAP do dia aparece só para quem está testando, e a tela do Theo não mostra mais as regras dos adultos.",

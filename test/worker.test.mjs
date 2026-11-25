@@ -229,6 +229,14 @@ test("registro compartilhado: um celular marca, o outro vê", async () => {
   assert.equal(r2.body.rows.length, 1);
   assert.equal(r2.body.rows[0].deleted, 1);
   assert.equal(r2.body.rows[0].by, "b");
+  // a lista de compras do plano inteiro e do mês também sincroniza (antes "tudo-…" era descartado em silêncio)
+  const c = await call("POST", "/api/log", { device: "a", ops: [
+    { kind: "shop", day: "tudo-2026-11-23", k: "arroz-g", v: "1" },
+    { kind: "shop", day: "mes-2026-12", k: "arroz-g", v: "casa" },
+    { kind: "eaten", day: "mes-2026-12", person: "rafael", k: "x", v: "1" },
+    { kind: "shop", day: "mes-2026-12-xx", k: "y", v: "1" },
+  ] });
+  assert.equal(c.body.written, 2, "período só vale para a lista de compras, e no formato certo");
 });
 
 test("ponte com o Pulse: peso e treino entram no registro; o app vê; tipos de fora são recusados", async () => {
@@ -466,6 +474,16 @@ test("opções repetidas aparecem uma vez só (Leite da noite do Theo igual nas 
   assert.equal(leite.opcoes, "");
   assert.deepEqual([lanche.numero, ...lanche.alternativas.map((a) => [a.numero, a.titulo])], [2, [1, "Pão"]], "Pão 1 e 2 iguais: sobram 2, numeradas 1 e 2");
   assert.equal(lanche.opcoes, "Opção 2 de 2");
+});
+
+test("plano sem carbo/gordura: a Mesa estima pelos ingredientes; o valor do plano vale mais", async () => {
+  const { normalizarPlano } = await import("../public/js/plan.js");
+  const m = (extra) => ({ hora: "07:00", nome: "Café da manhã", kcal: 400, proteina: 30, itens: [["Arroz", 100, "g"], ["Azeite", 10, "ml"], ["Sonho de Valsa", 2, "un"], ["Coisa que não existe", 50, "g"]], ...extra });
+  const { plano } = normalizarPlano({ formato: "plano-familia/2", pessoas: [{ id: "rafael", nome: "Rafael", metas: { kcal: 2000 } }],
+    dias: [{ data: "2026-12-01", refeicoes: { rafael: [m({}), m({ hora: "12:00", nome: "Almoço", carbo: 50, gordura: 7 })] } }] });
+  const [cafe, almoco] = plano.dias[0].refeicoes.rafael;
+  assert.deepEqual([cafe.carbo, cafe.gordura], [78 + 24, Math.round(0.5 + 9.2 + 13)], "arroz 100 g + azeite 10 ml + 2 bombons");
+  assert.deepEqual([almoco.carbo, almoco.gordura], [50, 7]);
 });
 
 test("destaque do dia: o teste FODMAP só aparece para quem está testando", async () => {
