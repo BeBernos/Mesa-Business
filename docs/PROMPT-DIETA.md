@@ -16,7 +16,7 @@ O app confere tudo antes de publicar. Se algo estiver errado, ele mostra a lista
 > - JSON válido, UTF-8, chaves exatamente como abaixo. Datas `AAAA-MM-DD`, horas `HH:MM` (24h, horário de São Paulo).
 > - Quantidades **sempre em peso cru**. Unidades: `g`, `ml` ou `un`.
 > - Um item é `["Nome", quantidade, "unidade"]` ou `["Nome", quantidade, "unidade", "observação"]`. Também pode ser objeto `{"nome": "Arroz", "qtd": 80, "unid": "g", "kcal": 288, "proteina": 6}`: kcal e proteína **por item** são opcionais, mas deixam exato o "comi só parte" do app (vale nos itens que mais pesam). Use o **mesmo nome** para o mesmo alimento em todo o plano, porque a lista de compras soma pelo nome.
-> - `kcal` e `proteina` de cada refeição precisam ser números. Opcionais: `carbo` e `gordura` (g). Some as refeições do dia e confira contra a meta (tolerância de ±5%).
+> - `kcal` e `proteina` de cada refeição precisam ser números. Preencha também `carbo` e `gordura` (g) em toda refeição e modelo (sem eles a Mesa estima pelos ingredientes). Some as refeições do dia e confira contra a meta (tolerância de ±5%).
 > - **Não use verde em nada** (nem no campo `cor` das pessoas). O app recusa cores verdes. Pode omitir `cor`: o app já tem a paleta da família.
 > - Um alimento de teste (FODMAP etc.) entra como **item da refeição** do dia do teste. Também deve aparecer em `testes` e, de preferência, num `avisos` do dia.
 >

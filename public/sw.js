@@ -1,11 +1,11 @@
 // Service worker: offline, notificações e "compartilhar arquivo com o app".
-const VERSION = "v23";
+const VERSION = "v25";
 const SHELL = `pf-shell-${VERSION}`;
 const PLANS = "pf-plans";
 const API = "pf-api";
 const ASSETS = [
   "/", "/fonts/inter.woff2", "/img/icons.svg", "/img/logo.svg", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/badge-96.png",
-  "/js/plan.js", "/js/ui.js", "/js/sync.js", "/js/state.js", "/js/acoes.js",
+  "/js/plan.js", "/js/macros.js", "/js/ui.js", "/js/sync.js", "/js/state.js", "/js/acoes.js",
   "/v3/", "/v3/v3.css", "/v3/app.js", "/v3/ui.js", "/v3/views/hoje.js", "/v3/views/ajustes.js", "/v3/views/catalogo.js", "/v3/views/ficha.js", "/v3/views/cozinha.js", "/v3/views/outra.js", "/v3/views/mais.js", "/js/tratamento.js", "/v3/views/diario.js", "/js/diario.js", "/v3/views/plano.js", "/v3/views/compras.js", "/v3/views/saude.js", "/v3/views/atualizar.js", "/js/aparelho.js", "/v3/data/alimentos.json", "/v3/desenhos.js", "/fonts/fredoka.woff2", "/fonts/outfit.woff2",
   "/js/views/bloqueio.js", "/js/views/novidades.js",
 ];

@@ -127,11 +127,12 @@ export function render() {
     ${macros({ feito: base, meta: { proteina: r.meta.proteina, carbo: r.plano.carbo, gordura: r.plano.gordura } })}`;
 
   const agora = agoraMin();
-  const vez = ehHoje ? r.refeicoes.find((m) => !comeu(S.data, S.pessoa, m.id) && minDe(m.hora) >= agora - 45) : null;
+  // o horário que a tela mostra (o treino do Pulse pode adiantar ou atrasar o pré/pós-treino) também decide o "agora"
+  const horas = r.refeicoes.map((m) => (!r.naoTreinou && r.pulse?.treino && horaPeloPulse(m, r.pulse.hora)) || m.hora);
+  const vez = ehHoje ? r.refeicoes.find((m, i) => !comeu(S.data, S.pessoa, m.id) && minDe(horas[i]) >= agora - 45) : null;
   const feitas = r.refeicoes.filter((m) => comeu(S.data, S.pessoa, m.id)).length;
-  const itens = r.refeicoes.map((m) => {
-    const hora = (!r.naoTreinou && r.pulse?.treino && horaPeloPulse(m, r.pulse.hora)) || m.hora;
-    const v = { id: m.id, hora, nome: m.nome, kcal: m.kcal, desc: m.titulo || m.itens.map((it) => it.nome.toLowerCase()).join(", "), extra: extraDoCartao(m),
+  const itens = r.refeicoes.map((m, i) => {
+    const v = { id: m.id, hora: horas[i], nome: m.nome, kcal: m.kcal, desc: m.titulo || m.itens.map((it) => it.nome.toLowerCase()).join(", "), extra: extraDoCartao(m),
       itens: m.itens.map((it) => [it.nome, fmtQtd(it.qtd, it.unid)]) };
     if (crianca) return m === vez ? cartaoDaVez(v, { semKcal: true, go: aceiteBotoes(m.id) })
       : refeicao(v, { feita: comeu(S.data, S.pessoa, m.id), semKcal: true, antes: boneco(m.tipo), depois: aceiteBotoes(m.id) });
@@ -139,7 +140,6 @@ export function render() {
       : refeicao(v, { feita: comeu(S.data, S.pessoa, m.id), semKcal: crianca });
   });
   // linha do tempo: refeições + doses do tratamento (junto da refeição) + sintomas anotados (no horário)
-  const horas = r.refeicoes.map((m) => (!r.naoTreinou && r.pulse?.treino && horaPeloPulse(m, r.pulse.hora)) || m.hora);
   const linha = r.refeicoes.map((m, i) => ({ hora: horas[i], ordem: 0, html: itens[i] }));
   const t = tratamentoAtivo(S.pessoa);
   for (const d of dosesDoDia(t, S.data, r.refeicoes.map((m, i) => ({ ...m, hora: horas[i] })))) {

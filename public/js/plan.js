@@ -2,6 +2,7 @@
 // Este módulo é usado no navegador e no Worker (sem DOM): normaliza, valida e
 // deriva o que as telas e as notificações precisam (totais, agenda, compras).
 // Especificação para humanos: docs/FORMATO-PLANO.md
+import { estimarMacros } from "./macros.js";
 
 export const FORMATO = "plano-familia/2";
 export const DIAS_SEMANA = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
@@ -116,6 +117,11 @@ function normRefeicao(raw, modelos, onde, erros, ehAlternativa = false) {
     itens,
   };
   for (const k of ["kcal", "proteina", "carbo", "gordura"]) if (Number.isNaN(out[k])) { erros.push(`${onde}: "${k}" não é número`); out[k] = null; }
+  // plano sem carbo/gordura (opcionais no formato): estima pelos ingredientes, para os macros da Hoje não ficarem em "–"
+  if (out.carbo == null || out.gordura == null) {
+    const e = estimarMacros(itens);
+    if (e) { if (out.carbo == null) out.carbo = e.carbo; if (out.gordura == null) out.gordura = e.gordura; }
+  }
   out.tipo = tipoRefeicao({ ...r, nome: out.nome });
   // alternativas: outras opções para o mesmo horário (id de modelo ou refeição completa); herdam hora, nome e tipo
   if (!ehAlternativa) {

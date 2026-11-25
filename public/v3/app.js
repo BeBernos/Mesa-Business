@@ -110,7 +110,8 @@ async function carregarMeta() {
     LS.set("app_meta", S.meta);
     S.online = true;
   } catch (e) {
-    if (e.auth || e.locked) throw e;
+    // travado ou sem sessão: a tela de entrada resolve (antes o erro subia e ficava sem tratamento em quem chamou)
+    if (e.auth || e.locked) return bloqueio.telaBloqueio(iniciar);
     S.online = false;
   }
 }
