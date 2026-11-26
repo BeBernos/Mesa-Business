@@ -48,6 +48,7 @@ await p.evaluate(() => ["app_log_rows", "app_log_pending", "app_log_since"].forE
 await p.reload();
 await p.waitForSelector(".rings").catch(async (e) => { await shot("v3-00-sem-hoje"); console.log("tela:", (await p.textContent("body")).slice(0, 300)); throw e; });
 await pausa(1100);
+ok((await p.$$eval(".rings.quatro circle:not(.tr)", (l) => l.length)) === 4, "Hoje: anéis de kcal, proteína, carbo e gordura");
 
 const feitas = () => p.$$eval(".tl .meal.done", (l) => l.length);
 const reg = (kind, k) => p.evaluate(([kind, k]) => { const r = JSON.parse(localStorage.app_log_rows || "{}"); const x = Object.values(r).find((r) => r.kind === kind && r.k === k && !r.deleted); return x ? x.v : null; }, [kind, k]);

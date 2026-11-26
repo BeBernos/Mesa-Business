@@ -3,6 +3,10 @@
 
 export const NOVIDADES = [
   {
+    versao: "3.0.3", data: "2026-11-26", titulo: "Quatro anéis",
+    itens: ["**Carbo e gordura nos anéis:** além de calorias e proteína, a Hoje mostra um anel para o carbo (amarelo) e outro para a gordura (lilás), nas mesmas cores das linhas embaixo."],
+  },
+  {
     versao: "3.0.2", data: "2026-11-25", titulo: "Agora, carbo e o mês",
     itens: [
       "**Cartão do agora:** tocar em qualquer parte dele abre a refeição, com as opções, “só parte” e “outra coisa”, como nas outras.",
