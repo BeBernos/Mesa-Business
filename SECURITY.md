@@ -10,11 +10,12 @@ family's own AI assistant can read or change anything**, with no third-party ser
 | Threat | Mitigation |
 |---|---|
 | Someone finds the app's address | Every API route needs a device cookie created with the family password (checked in constant time). Without it the app shows only the login screen. |
-| A phone is lost or left unlocked | A sliding 4-hour session sits on top of the device cookie: after 4 hours without use the API answers `423 Locked` and the app asks for a **passkey** (WebAuthn, challenge and signature verified on the server) or the password. Notification actions ("Ate it", "15 min") stay available. |
+| A phone is lost or left unlocked | A sliding 4-hour session sits on top of the device cookie: after 4 hours without use the API answers `423 Locked` and the app asks for a **passkey** (WebAuthn, challenge and signature verified on the server) — only when the person taps, never on its own — or the password. Notification actions ("Ate it", "15 min") stay available. |
 | Cross-site request forgery | `SameSite=None; Secure; Partitioned; HttpOnly` cookies plus an `Origin` check on every write. |
 | Clickjacking | `frame-ancestors` allows only the companion training app, which embeds Mesa on purpose. |
 | The AI connector link leaks | The MCP endpoint is a long random secret stored server-side; "Generate another" revokes the old one instantly. Publishing a plan always takes a validation step and the user's confirmation in the conversation. |
 | Push service reading messages | Web Push payloads are encrypted end to end (RFC 8291, `aes128gcm`) with VAPID authentication. |
+| One family member seeing another's health notes | Treatments, reintroduction tests, notes and alerts carry an owner; shared texts from the plan are filtered per person before they reach a screen. |
 | Other apps of the suite | Pulse and Cesta reach Mesa only through private service bindings (no public route); each method accepts a fixed set of record kinds and validated fields. |
 
 ## Data minimisation
@@ -41,6 +42,7 @@ de IA da própria família leem ou mudam algo**, sem serviços de terceiros no m
   gravações e `frame-ancestors` só para o app de treino parceiro.
 - **Link do conector vazado:** segredo longo guardado no servidor; "Gerar outro" desliga o anterior na hora; publicar
   sempre passa por validação e confirmação.
+- **Saúde de um no dia do outro:** tratamentos, testes, notas e alertas têm dono; textos do plano que valem para todos são filtrados por pessoa antes de aparecer.
 - **Notificações:** criptografia de ponta a ponta (RFC 8291) com VAPID.
 - **Apps do conjunto:** Pulse e Cesta só chegam à Mesa por ligações privadas entre Workers, com tipos e campos conferidos;
   a Cesta recebe só a lista de compras e devolve só preços.
