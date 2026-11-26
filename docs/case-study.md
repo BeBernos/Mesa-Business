@@ -2,7 +2,7 @@
 
 *[Leia em português](case-study.pt-BR.md)*
 
-**Role:** product, UX and engineering, end to end · **Period:** Oct 2026 – today, 20 releases · **Users:** a real family
+**Role:** product, UX and engineering, end to end · **Period:** Oct 2026 – today, 22 releases · **Users:** a real family
 (two adults on different plans, one child), every day
 
 ## The problem
@@ -37,6 +37,24 @@ plan was written from memory — the AI never saw what was actually eaten.
 - The shopping list follows the meals actually chosen, knows what is already in the pantry and how much it costs.
 - A suite effect: Mesa, the training app (Pulse) and the grocery app (Cesta) share data over private Worker bindings,
   each one staying small.
+
+## Mesa 3.0 — the redesign (November 2026)
+
+After two months of daily use the app worked, but it had grown screen by screen. 3.0 rebuilt the interface from one
+reference design instead of patching it:
+
+- **One skin, "Orbit"** — dark, the brand glow behind glass cards, thin strokes and light numbers. Four tabs (Today, Plan,
+  Shopping, Diary) instead of five; Health moved into the Diary. Tested with Android's large font from day one.
+- **Each person, their own screen** — the family reported that one adult's health notes and food tests
+  were showing on the other adult's and the child's days. Everything personal now carries an owner, and the one text the
+  AI writes for the whole family (the day's highlight) is filtered per person.
+- **Asking for less, getting better data** — "something else" became a small basket (several items with quantities, or
+  just a name), and when a plan arrived without carbs and fat the app started estimating them from the ingredients
+  instead of showing a dash; the connector's rules now ask the AI for those values.
+- **The entrance** — the lock screen became a short animation of the logo with the passkey asked on tap, never
+  automatically, so opening the app is not a security prompt.
+- **A public twin** — this repository is generated from the private one by a script that swaps the real family for a
+  fictitious one and refuses to finish if a real name is left; the README images are recorded from the live demo in CI.
 
 ## What I would do next
 
