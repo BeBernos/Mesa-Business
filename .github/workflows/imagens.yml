@@ -1,4 +1,4 @@
-# Grava as imagens do README (capa e GIF) a partir da demonstração e deixa no artefato "imagens" para conferir e subir.
+# Grava as imagens do README (capa, GIF, telas, computador e diagramas) a partir da demonstração e deixa no artefato "imagens" para conferir e subir.
 name: Imagens do README
 on:
   workflow_dispatch:
@@ -20,7 +20,6 @@ jobs:
         with:
           name: imagens
           path: |
-            docs/images/capa.png
-            docs/images/demo.gif
+            docs/images/
             _imagens/*.png
           retention-days: 7
