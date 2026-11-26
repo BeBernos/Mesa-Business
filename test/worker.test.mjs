@@ -130,8 +130,9 @@ test("fluxo completo: aparelhos, upload, aviso de atualização, cron, adiar e i
   const today = localDate(Date.now(), TZ);
   for (const pid of ["rafael", "marina"]) await call("PUT", `/api/agua-cfg/${pid}`, { ligado: false }); // teste das refeições; a água tem o seu
 
-  await call("PUT", "/api/devices/aparelho-rafael", { name: "S25", persons: ["rafael"], lead: 10, sub: rafael.sub, uploader: true });
-  await call("PUT", "/api/devices/aparelho-marina", { name: "S24 FE", persons: ["marina", "rafael"], lead: 0, sub: marina.sub, summary: { on: true, time: "06:30" } });
+  // sem as perguntas da Mesa: o "adiar" abaixo roda no horário real + 15 min e, perto das 10:00/15:30/19:00…, elas somavam avisos
+  await call("PUT", "/api/devices/aparelho-rafael", { name: "S25", persons: ["rafael"], lead: 10, sub: rafael.sub, uploader: true, proativo: false });
+  await call("PUT", "/api/devices/aparelho-marina", { name: "S24 FE", persons: ["marina", "rafael"], lead: 0, sub: marina.sub, summary: { on: true, time: "06:30" }, proativo: false });
 
   // upload pelo Rafael → só a Marina é avisada
   let push = interceptPush();
