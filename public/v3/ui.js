@@ -25,13 +25,14 @@ const CHECK = `<span class="check" aria-hidden="true"><svg viewBox="0 0 24 24" f
 const anim = (chave, p) => `data-anim="${esc(chave)}" data-v="${p.toFixed(4)}"`;
 
 /** Dois anéis (kcal por fora, proteína por dentro) com o número sempre no centro. */
-export function aneis({ kcal, metaKcal, prot, metaProt, chave = "hoje", rotulo = "" }) {
-  return `<div class="rings" role="img" aria-label="${fmt(kcal)} de ${fmt(metaKcal)} kcal, ${fmt(prot)} de ${fmt(metaProt)} g de proteína">
-    <svg viewBox="0 0 200 200" aria-hidden="true"><defs>
-      <linearGradient id="g-k"><stop offset="0" stop-color="#FF6B3D"/><stop offset="1" stop-color="#FF9D5C"/></linearGradient>
-      <linearGradient id="g-p"><stop offset="0" stop-color="#F0506E"/><stop offset="1" stop-color="#FF7AC6"/></linearGradient></defs>
-      <circle class="tr" cx="100" cy="100" r="90"/><circle cx="100" cy="100" r="90" stroke="url(#g-k)" pathLength="100" ${anim(chave + ":k", pct(kcal, metaKcal))}/>
-      <circle class="tr" cx="100" cy="100" r="70"/><circle cx="100" cy="100" r="70" stroke="url(#g-p)" pathLength="100" ${anim(chave + ":p", pct(prot, metaProt))}/>
+export function aneis({ kcal, metaKcal, prot, metaProt, carbo, metaCarbo, gord, metaGord, chave = "hoje", rotulo = "" }) {
+  // de fora para dentro: kcal, proteína e, quando o plano tem a meta, carbo e gordura (mesmas cores das linhas de macros)
+  const l = [["k", kcal, metaKcal, "#FF6B3D", "#FF9D5C", "kcal"], ["p", prot, metaProt, "#F0506E", "#FF7AC6", "g de proteína"],
+    ["c", carbo, metaCarbo, "#F59F00", "#FFC94D", "g de carbo"], ["f", gord, metaGord, "#9775FA", "#C4B0FF", "g de gordura"]].filter((x, i) => i < 2 || x[2]);
+  const raio = (i) => (l.length > 2 ? 90 - i * 13 : 90 - i * 20);
+  return `<div class="rings ${l.length > 2 ? "quatro" : ""}" role="img" aria-label="${l.map(([, v, m, , , u]) => `${fmt(v)} de ${fmt(m)} ${u}`).join(", ")}">
+    <svg viewBox="0 0 200 200" aria-hidden="true"><defs>${l.map(([k, , , a, b]) => `<linearGradient id="g-${k}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`).join("")}</defs>
+      ${l.map(([k, v, m], i) => `<circle class="tr" cx="100" cy="100" r="${raio(i)}"/><circle cx="100" cy="100" r="${raio(i)}" stroke="url(#g-${k})" pathLength="100" ${anim(`${chave}:${k}`, pct(v, m))}/>`).join("")}
     </svg>
     <div class="center"><div class="big num gtext" data-pop="${esc(chave)}:kcal">${fmt(kcal)}</div><small>${rotulo || `de ${fmt(metaKcal)} kcal`}</small></div></div>`;
 }

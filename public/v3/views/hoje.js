@@ -121,7 +121,8 @@ export function render() {
   const ml = Number(log.get("water", S.data, S.pessoa)?.v || 0);
   const metaMl = metaAgua(S.plano, S.pessoa, pesoRecente(S.pessoa));
   const base = futuro ? r.plano : r.feito;
-  const painel = crianca ? "" : `<div class="top2 ${futuro ? "so" : ""}">${aneis({ kcal: base.kcal, metaKcal: r.meta.kcal, prot: base.proteina, metaProt: r.meta.proteina, rotulo: futuro ? "kcal no plano" : "" })}
+  const painel = crianca ? "" : `<div class="top2 ${futuro ? "so" : ""}">${aneis({ kcal: base.kcal, metaKcal: r.meta.kcal, prot: base.proteina, metaProt: r.meta.proteina,
+      carbo: base.carbo, metaCarbo: r.plano.carbo, gord: base.gordura, metaGord: r.plano.gordura, rotulo: futuro ? "kcal no plano" : "" })}
       ${futuro ? "" : garrafa({ ml, meta: metaMl })}</div>
     ${(() => { const n = futuro ? 0 : sequenciaAgua(metaMl); return n >= 3 ? `<div class="hoje-agua">${icon("droplet", "sm")}${n} dias seguidos na meta da água</div>` : ""; })()}
     ${macros({ feito: base, meta: { proteina: r.meta.proteina, carbo: r.plano.carbo, gordura: r.plano.gordura } })}`;
