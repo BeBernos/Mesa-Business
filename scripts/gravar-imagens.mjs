@@ -176,14 +176,14 @@ for (const [lg, t] of Object.entries(T)) {
     ${txt ? `<text x="${tx}" y="${ty}" fill="#A9B8FF" font-family="Inter" font-size="15" text-anchor="middle">${txt}</text>` : ""}`;
   await png(`${brilhos}
     <div style="position:absolute;left:60px;top:46px"><div class="eyebrow">Mesa 3.0</div><h2 style="font-size:44px">${a.titulo}</h2></div>
-    <svg width="1600" height="960" style="position:absolute;inset:0"><defs><marker id="m" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#7B93FF"/></marker></defs>
-      ${seta(452, 470, 598, 470, a.s1, 525, 452)}${seta(1052, 300, 1168, 300, a.s2, 1110, 282)}${seta(1052, 560, 1168, 560, a.s3, 1110, 542)}${seta(1052, 765, 1168, 765, a.s3, 1110, 747)}${seta(825, 732, 825, 788, "", 0, 0)}</svg>
-    ${caixa(60, 220, 390, 500, "#7B93FF", a.fones, a.fonesL)}
-    ${caixa(600, 200, 450, 530, "#F06595", a.worker, a.workerL)}
-    ${caixa(600, 790, 450, 120, "#FF8A4C", a.dados, a.dadosL)}
-    ${caixa(1170, 200, 370, 200, "#B57CFF", a.claude, a.claudeL)}
-    ${caixa(1170, 470, 370, 170, "#FF8A4C", a.pulse, a.pulseL)}
-    ${caixa(1170, 680, 370, 170, "#F59F00", a.cesta, a.cestaL)}`, 1600, 960, `arquitetura-${lg}.png`);
+    <svg width="1600" height="800" style="position:absolute;inset:0"><defs><marker id="m" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#7B93FF"/></marker></defs>
+      ${seta(404, 360, 636, 360, a.s1, 520, 342)}${seta(1064, 252, 1176, 252, a.s2, 1120, 234)}${seta(1064, 420, 1176, 420, a.s3, 1120, 402)}${seta(1064, 580, 1176, 580, a.s3, 1120, 562)}${seta(850, 602, 850, 658, "", 0, 0)}</svg>
+    ${caixa(60, 200, 340, 320, "#7B93FF", a.fones, a.fonesL)}
+    ${caixa(640, 180, 420, 420, "#F06595", a.worker, a.workerL)}
+    ${caixa(640, 660, 420, 110, "#FF8A4C", a.dados, a.dadosL)}
+    ${caixa(1180, 180, 360, 145, "#B57CFF", a.claude, a.claudeL)}
+    ${caixa(1180, 355, 360, 130, "#FF8A4C", a.pulse, a.pulseL)}
+    ${caixa(1180, 520, 360, 120, "#F59F00", a.cesta, a.cestaL)}`, 1600, 800, `arquitetura-${lg}.png`);
 
   // fluxo
   const f = t.fluxo;
