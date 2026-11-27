@@ -489,10 +489,14 @@ await p.click("[data-act=aj-menu]").catch(() => {});
 await p.waitForSelector("[data-act=aj-sec][data-s=avisos]");
 await shot("v3-95-ajustes");
 ok(await p.evaluate(() => { const b = document.querySelector(".perfil"), av = b?.querySelector(".av"); return !!av && getComputedStyle(b).display === "flex" && av.getBoundingClientRect().width >= 40; }), "Ajustes: o cartão deste celular tem avatar e fica em linha");
+// a lista demora a chegar de propósito: o que já foi digitado não pode sumir quando ela chega
+await p.route("**/api/ideias", async (r) => { if (r.request().method() === "GET") await pausa(900); await r.continue(); });
 await p.click("[data-act=aj-sec][data-s=ideias]");
 await p.fill("[data-form=ideia] [name=texto]", "Um atalho para a lista do mês");
 await p.click("[data-act=aj-tipo-ideia][data-v=problema]");
-ok((await p.inputValue("[data-form=ideia] [name=texto]")) === "Um atalho para a lista do mês", "Ideias: trocar o tipo não apaga o texto");
+await p.waitForSelector("#ideias-lista >> text=Nada enviado ainda");
+await p.unroute("**/api/ideias");
+ok((await p.inputValue("[data-form=ideia] [name=texto]")) === "Um atalho para a lista do mês", "Ideias: trocar o tipo e a lista chegando não apagam o texto");
 await p.click("[data-form=ideia] button[type=submit]");
 await p.waitForSelector(".rows >> text=Um atalho para a lista do mês");
 ok(true, "Ideias e feedback: enviar e ver na lista");
