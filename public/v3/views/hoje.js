@@ -1,6 +1,6 @@
 // Hoje: um dia = uma linha do tempo. Anéis, garrafa, macros, avisos do dia, refeições (tocar no corpo abre a ficha,
 // tocar no círculo marca, segurar abre as ações), preparo e regras. Grava pelas regras de js/acoes.js.
-import { S, hoje, agoraMin, minDe, resumoDia, comeu, pesoRecente, rerender, treinou } from "../../js/state.js";
+import { S, hoje, agoraMin, minDe, resumoDia, comeu, pesoRecente, rerender } from "../../js/state.js";
 import { log } from "../../js/sync.js";
 import { md } from "../../js/ui.js";
 import { foto, restaurar, alternarComi, somarAgua } from "../../js/acoes.js";
@@ -97,10 +97,13 @@ function avisosDoDia(r, p, futuro) {
   if (!r.dia.avisos.length) for (const { teste, dose } of testesDoDia(S.plano, S.data, S.pessoa)) {
     out.push(aviso(`<b>Teste · ${esc(teste.alimento || teste.grupo)} · dose ${dose.n}/${teste.doses.length}</b><br>${esc(dose.texto || dose.quantidade)}`, "alerta"));
   }
-  if (r.dia.seNaoTreinar[S.pessoa] && !futuro) {
-    const t = treinou(S.data, S.pessoa);
-    out.push(aviso(`<div class="lado-a-lado"><b>Treinou hoje?</b><span class="go"><button class="btn ${t ? "cta" : ""}" data-act="treino" data-t="1" aria-pressed="${t}">Sim</button>
-      <button class="btn ${!t ? "cta" : ""}" data-act="treino" data-t="0" aria-pressed="${!t}">Não</button></span></div>${!t ? md(r.dia.seNaoTreinar[S.pessoa]) : ""}`));
+  // sem resposta vale "treinou" (a meta do dia de treino); respondeu "sim" → o cartão sai; "não" → fica só a orientação do plano
+  const resposta = log.get("trained", S.data, S.pessoa)?.v;
+  if (r.dia.seNaoTreinar[S.pessoa] && !futuro && resposta !== "1") {
+    out.push(resposta === "0"
+      ? aviso(`<div class="lado-a-lado"><b>Sem treino hoje</b><button class="btn txt" data-act="treino" data-t="1">Treinei</button></div>${md(r.dia.seNaoTreinar[S.pessoa])}`)
+      : aviso(`<div class="lado-a-lado"><b>Treinou hoje?</b><span class="go"><button class="btn" data-act="treino" data-t="1">Sim</button>
+      <button class="btn" data-act="treino" data-t="0">Não</button></span></div>`));
   }
   const gasto = Number(log.get("burn", S.data, S.pessoa)?.v || 0);
   if (gasto > 0) out.push(aviso(`<div class="lado-a-lado"><b>Cardio no Pulse</b><span class="num">${Math.round(gasto)} kcal</span></div>`));
@@ -213,7 +216,12 @@ export const acts = {
     somarAgua(data, pessoa, n);
     toast(`+${n} ml de água`, () => somarAgua(data, pessoa, -n));
   },
-  treino: (b) => log.set("trained", S.data, S.pessoa, "", b.dataset.t),
+  treino: (b) => {
+    const { data, pessoa } = S, antes = log.get("trained", data, pessoa)?.v;
+    log.set("trained", data, pessoa, "", b.dataset.t);
+    const voltar = () => (antes == null ? log.del("trained", data, pessoa) : log.set("trained", data, pessoa, "", antes));
+    toast(b.dataset.t === "1" ? "Treino anotado 💪" : "Anotado: sem treino hoje", voltar);
+  },
 };
 
 // ---------- segurar = ações (o clique que vem depois não marca nem abre a ficha) ----------

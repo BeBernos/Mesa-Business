@@ -413,7 +413,7 @@ test("conector do Claude (MCP): contexto, rascunho em partes, validar e publicar
   const notif = await worker.fetch(new Request("https://app.test" + caminho, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) }), env, ctx);
   assert.equal(notif.status, 202);
   const nomes = (await rpc("tools/list", {})).result.tools.map((t) => t.name);
-  assert.deepEqual(nomes, ["contexto_da_familia", "plano_atual", "formato_do_plano", "iniciar_rascunho", "adicionar_dias", "publicar_rascunho", "gravar_analise"]);
+  assert.deepEqual(nomes, ["contexto_da_familia", "plano_atual", "formato_do_plano", "iniciar_rascunho", "adicionar_dias", "publicar_rascunho", "gravar_analise", "ideias_do_app", "responder_ideia"]);
 
   // um feedback e um peso aparecem no contexto
   const hoje = localDate(Date.now(), TZ);
@@ -884,6 +884,33 @@ test("diário: fechamento do dia validado, média de sintomas por semana, piora 
   assert.match(pedido, /gravar_analise/);
   assert.ok(linkClaude(pedido).startsWith("https://claude.ai/new?q="));
   assert.ok(decodeURIComponent(linkClaude(pedido).split("q=")[1]).includes("Rafael"));
+});
+
+test("ideias e feedbacks: o app envia, o Claude lê e responde (validar antes), a família vê a resposta", async () => {
+  const { call, env } = setup();
+  await call("POST", "/api/login", { password: "senha-forte-teste" });
+  assert.equal((await call("POST", "/api/ideias", { texto: "   " })).status, 400, "vazio não entra");
+  const i = (await call("POST", "/api/ideias", { tipo: "problema", texto: "O treino não some", pessoa: "marina", aparelho: "S24 FE" })).body;
+  await call("POST", "/api/ideias", { tipo: "qualquer", texto: "Modo escuro mais forte" });
+  const lista = (await call("GET", "/api/ideias")).body;
+  assert.deepEqual(lista.map((x) => [x.tipo, x.status]), [["ideia", "nova"], ["problema", "nova"]], "mais nova primeiro; tipo desconhecido vira ideia");
+  const { body } = await call("GET", "/api/mcp");
+  const caminho = new URL(body.url).pathname;
+  const tool = async (name, args = {}) => {
+    const res = await worker.fetch(new Request("https://app.test" + caminho, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }) }), env, { waitUntil() {} });
+    const r = (await res.json()).result;
+    return { erro: !!r.isError, dado: (() => { try { return JSON.parse(r.content[0].text); } catch (e) { return r.content[0].text; } })() };
+  };
+  assert.equal((await tool("ideias_do_app", { so_abertas: true })).dado.length, 2);
+  const v = await tool("responder_ideia", { id: i.id, status: "feita", resposta: "Corrigido na 3.0.4", so_validar: true });
+  assert.equal(v.dado.valido, true);
+  assert.equal((await call("GET", "/api/ideias")).body[1].status, "nova", "validar não grava");
+  await tool("responder_ideia", { id: i.id, status: "feita", resposta: "Corrigido na 3.0.4", so_validar: false });
+  const depois = (await call("GET", "/api/ideias")).body.find((x) => x.id === i.id);
+  assert.deepEqual([depois.status, depois.resposta, depois.pessoa], ["feita", "Corrigido na 3.0.4", "marina"]);
+  assert.equal((await tool("ideias_do_app", { so_abertas: true })).dado.length, 1, "a feita sai das abertas");
+  assert.equal((await tool("responder_ideia", { id: "nao-existe", status: "vista", so_validar: true })).erro, true);
 });
 
 test("diário no servidor: fechamentos no contexto, gravar_analise (validar antes) e análises lidas no app", async () => {

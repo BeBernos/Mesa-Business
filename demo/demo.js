@@ -100,6 +100,12 @@ async function api(path, init = {}) {
     if (m === "PUT") { const v = tipo === "tratamento" ? cfgTratamento(body) : { ...LS.get(chave, padrao), ...body }; LS.set(chave, v); return json(v); }
     return json(LS.get(chave, padrao));
   }
+  // ideias e feedback: guardadas neste navegador, com uma já respondida para mostrar o ciclo
+  if (p === "/ideias") {
+    const l = LS.get("demo_ideias", [{ id: "demo-i1", data: dia(-2), pessoa: "marina", aparelho: "Celular · Marina", tipo: "ideia", texto: "Ver a lista de compras do mês inteiro", status: "feita", resposta: "Feito: Compras agora tem Nov, Dez e Jan." }]);
+    if (m === "POST") { const x = { id: `i${Date.now()}`, data: hoje(), pessoa: body.pessoa || "", aparelho: body.aparelho || "", tipo: body.tipo === "problema" ? "problema" : "ideia", texto: String(body.texto || "").slice(0, 1000), status: "nova" }; LS.set("demo_ideias", [x, ...l]); return json(x); }
+    return json(l);
+  }
   if (p === "/mcp") return json({ url: `${location.origin}${base}mcp/endereco-de-demonstracao` });
   if (p === "/vapid" || p.startsWith("/passkey")) return json({ error: "Indisponível na demonstração" }, 400);
   if (p.startsWith("/plan")) return json({ error: "Na demonstração o plano não muda. No app real, o Claude publica pelo conector." }, 400);

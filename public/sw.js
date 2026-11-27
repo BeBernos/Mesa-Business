@@ -1,5 +1,5 @@
 // Service worker: offline, notificações e "compartilhar arquivo com o app".
-const VERSION = "v26";
+const VERSION = "v27";
 const SHELL = `pf-shell-${VERSION}`;
 const PLANS = "pf-plans";
 const API = "pf-api";
