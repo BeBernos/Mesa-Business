@@ -2,6 +2,7 @@
 // Regra: TODA atualização sobe VERSAO e ganha uma entrada no topo de NOVIDADES (linguagem simples).
 
 export const NOVIDADES = [
+  { versao: "3.0.5", data: "2026-11-27", titulo: "Correção nas ideias", itens: ["**Ideias e feedback:** o texto que você começa a escrever não some mais quando a lista de enviadas termina de carregar."] },
   {
     versao: "3.0.4", data: "2026-11-27", titulo: "Treino e ideias",
     itens: [

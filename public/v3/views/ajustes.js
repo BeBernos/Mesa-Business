@@ -19,6 +19,14 @@ const hhmm = (ms) => new Date(ms).toLocaleTimeString("pt-BR", { hour: "2-digit",
 const diaDe = (ms) => new Date(ms).toLocaleDateString("en-CA", { timeZone: S.tz });
 let proximos = null, aparelhos = null, mcpUrl = null, digitalOk = null, instalar = null, ideias = null, tipoIdeia = "ideia";
 const STATUS_IDEIA = { nova: "enviada", vista: "o Claude viu", feita: "feita ✓", nao_vai: "não vai entrar" };
+function listaIdeias() {
+  const nomeDe = (id) => pessoas().find((p) => p.id === id)?.nome || "";
+  return `<div id="ideias-lista"><div class="sec" style="margin-top:1rem"><span>Enviadas</span><span>${ideias?.length || 0}</span></div>
+    <div class="rows">${!ideias ? `<div class="row muted">carregando…</div>` : ideias.length ? ideias.slice(0, 40).map((x) => `<div class="row" style="align-items:flex-start">
+      <span aria-hidden="true">${x.tipo === "problema" ? "🐞" : "💡"}</span><span class="grow"><div>${esc(x.texto)}</div>
+      <div class="sub">${ddmm(x.data)}${x.pessoa ? ` · ${esc(nomeDe(x.pessoa))}` : ""} · ${esc(STATUS_IDEIA[x.status] || x.status)}</div>
+      ${x.resposta ? `<div class="sub" style="color:var(--fg);margin-top:.375rem">${icon("sparkles", "sm")} ${esc(x.resposta)}</div>` : ""}</span></div>`).join("") : `<div class="row muted">Nada enviado ainda.</div>`}</div></div>`;
+}
 addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); instalar = e; });
 
 // ---------- salvar o aparelho (debounce: digitar o nome não grava a cada letra) ----------
@@ -155,19 +163,15 @@ const PAGINAS = {
       <button class="btn txt" data-act="aj-apagar-plano" data-id="${esc(h.id)}" aria-label="Apagar ${esc(h.title)}">${icon("x", "sm")}</button></span></div>`).join("")}</div>` : ""}`;
   },
   ideias: () => {
-    if (ideias === null) { ideias = undefined; api("/api/ideias").then((l) => { ideias = Array.isArray(l) ? l : []; rerender(); }).catch(() => { ideias = []; rerender(); }); }
-    const nomeDe = (id) => pessoas().find((p) => p.id === id)?.nome || "";
+    // a lista chega depois: troca só ela (redesenhar a página apagaria o que já foi digitado)
+    const chegou = (l) => { ideias = Array.isArray(l) ? l : []; const el = document.getElementById("ideias-lista"); if (el) el.outerHTML = listaIdeias(); else rerender(); };
+    if (ideias === null) { ideias = undefined; api("/api/ideias").then(chegou).catch(() => chegou([])); }
     return `<form class="glass card regras" data-form="ideia">
       <div class="chips" role="radiogroup" aria-label="Tipo">${[["ideia", "💡 Ideia"], ["problema", "🐞 Problema"]].map(([k, l]) =>
         `<button type="button" class="chip ${tipoIdeia === k ? "on" : ""}" data-act="aj-tipo-ideia" data-v="${k}" role="radio" aria-checked="${tipoIdeia === k}">${l}</button>`).join("")}</div>
       <textarea class="input" name="texto" rows="4" maxlength="1000" placeholder="${tipoIdeia === "ideia" ? "O que deixaria a Mesa melhor?" : "O que aconteceu? Em qual tela?"}" aria-label="Sua ${tipoIdeia}"></textarea>
       <button class="btn cta" type="submit">Enviar</button></form>
-    <p class="muted">Fica guardado para a família toda. O Claude lê pelo conector e pode responder aqui.</p>
-    <div class="sec" style="margin-top:1rem"><span>Enviadas</span><span>${ideias?.length || 0}</span></div>
-    <div class="rows">${!ideias ? `<div class="row muted">carregando…</div>` : ideias.length ? ideias.slice(0, 40).map((x) => `<div class="row" style="align-items:flex-start">
-      <span aria-hidden="true">${x.tipo === "problema" ? "🐞" : "💡"}</span><span class="grow"><div>${esc(x.texto)}</div>
-      <div class="sub">${ddmm(x.data)}${x.pessoa ? ` · ${esc(nomeDe(x.pessoa))}` : ""} · ${esc(STATUS_IDEIA[x.status] || x.status)}</div>
-      ${x.resposta ? `<div class="sub" style="color:var(--fg);margin-top:.375rem">${icon("sparkles", "sm")} ${esc(x.resposta)}</div>` : ""}</span></div>`).join("") : `<div class="row muted">Nada enviado ainda.</div>`}</div>`;
+    <p class="muted">Fica guardado para a família toda. O Claude lê pelo conector e pode responder aqui.</p>${listaIdeias()}`;
   },
   claude: () => `<div class="glass card"><b>Conectar a Mesa ao Claude</b>
     <p class="muted">Com o conector, você pede no Claude “monte a dieta do mês que vem” e ele lê o feedback, o peso e o que foi comido, monta o plano e publica aqui. Também grava as análises no Diário.</p>
