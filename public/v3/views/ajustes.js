@@ -17,7 +17,8 @@ const cor = (id) => (["rafael", "marina", "theo"].includes(id) ? `var(--${id})` 
 const sw = (campo, on, rotulo) => `<input type="checkbox" data-field="${campo}" ${on ? "checked" : ""} aria-label="${esc(rotulo)}">`;
 const hhmm = (ms) => new Date(ms).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: S.tz });
 const diaDe = (ms) => new Date(ms).toLocaleDateString("en-CA", { timeZone: S.tz });
-let proximos = null, aparelhos = null, mcpUrl = null, digitalOk = null, instalar = null;
+let proximos = null, aparelhos = null, mcpUrl = null, digitalOk = null, instalar = null, ideias = null, tipoIdeia = "ideia";
+const STATUS_IDEIA = { nova: "enviada", vista: "o Claude viu", feita: "feita ✓", nao_vai: "não vai entrar" };
 addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); instalar = e; });
 
 // ---------- salvar o aparelho (debounce: digitar o nome não grava a cada letra) ----------
@@ -153,6 +154,21 @@ const PAGINAS = {
       ${i > 0 && h.kind === "v2" ? `<button class="btn txt" data-act="aj-voltar-plano" data-id="${esc(h.id)}">${icon("rotate-ccw", "sm")}Voltar a este</button>` : ""}
       <button class="btn txt" data-act="aj-apagar-plano" data-id="${esc(h.id)}" aria-label="Apagar ${esc(h.title)}">${icon("x", "sm")}</button></span></div>`).join("")}</div>` : ""}`;
   },
+  ideias: () => {
+    if (ideias === null) { ideias = undefined; api("/api/ideias").then((l) => { ideias = Array.isArray(l) ? l : []; rerender(); }).catch(() => { ideias = []; rerender(); }); }
+    const nomeDe = (id) => pessoas().find((p) => p.id === id)?.nome || "";
+    return `<form class="glass card regras" data-form="ideia">
+      <div class="chips" role="radiogroup" aria-label="Tipo">${[["ideia", "💡 Ideia"], ["problema", "🐞 Problema"]].map(([k, l]) =>
+        `<button type="button" class="chip ${tipoIdeia === k ? "on" : ""}" data-act="aj-tipo-ideia" data-v="${k}" role="radio" aria-checked="${tipoIdeia === k}">${l}</button>`).join("")}</div>
+      <textarea class="input" name="texto" rows="4" maxlength="1000" placeholder="${tipoIdeia === "ideia" ? "O que deixaria a Mesa melhor?" : "O que aconteceu? Em qual tela?"}" aria-label="Sua ${tipoIdeia}"></textarea>
+      <button class="btn cta" type="submit">Enviar</button></form>
+    <p class="muted">Fica guardado para a família toda. O Claude lê pelo conector e pode responder aqui.</p>
+    <div class="sec" style="margin-top:1rem"><span>Enviadas</span><span>${ideias?.length || 0}</span></div>
+    <div class="rows">${!ideias ? `<div class="row muted">carregando…</div>` : ideias.length ? ideias.slice(0, 40).map((x) => `<div class="row" style="align-items:flex-start">
+      <span aria-hidden="true">${x.tipo === "problema" ? "🐞" : "💡"}</span><span class="grow"><div>${esc(x.texto)}</div>
+      <div class="sub">${ddmm(x.data)}${x.pessoa ? ` · ${esc(nomeDe(x.pessoa))}` : ""} · ${esc(STATUS_IDEIA[x.status] || x.status)}</div>
+      ${x.resposta ? `<div class="sub" style="color:var(--fg);margin-top:.375rem">${icon("sparkles", "sm")} ${esc(x.resposta)}</div>` : ""}</span></div>`).join("") : `<div class="row muted">Nada enviado ainda.</div>`}</div>`;
+  },
   claude: () => `<div class="glass card"><b>Conectar a Mesa ao Claude</b>
     <p class="muted">Com o conector, você pede no Claude “monte a dieta do mês que vem” e ele lê o feedback, o peso e o que foi comido, monta o plano e publica aqui. Também grava as análises no Diário.</p>
     ${mcpUrl ? `<div class="input endereco">${esc(mcpUrl)}</div>
@@ -195,6 +211,7 @@ const SECOES = [
   { grupo: true },
   { id: "plano", ic: "calendar-days", t: "Plano do mês", r: () => (S.planoInfo ? `${S.planoInfo.title} · até ${ddmm(S.planoInfo.to)}` : "Nenhum plano ainda") },
   { id: "claude", ic: "sparkles", t: "Claude", r: () => "Conector para montar o plano e analisar" },
+  { id: "ideias", ic: "lightbulb", t: "Ideias e feedback", r: () => "Uma ideia ou um problema para a Mesa" },
   { grupo: true },
   { id: "familia", ic: "house", t: "Família e treino", r: () => "Aparelhos · Pulse" },
   { id: "seguranca", ic: "lock", t: "Segurança", r: () => (temDigital() ? "Digital ativa" : `Senha · trava após ${LS.get("app_idle_h", 4)} h sem uso`) },
@@ -223,7 +240,15 @@ export function render() {
 export function abrirAjustes(s = null) { secao = s; location.hash = "ajustes"; rerender(); }
 
 export const acts = {
-  "aj-sec": (b) => { secao = b.dataset.s; rerender(); scrollTo(0, 0); },
+  "aj-sec": (b) => { secao = b.dataset.s; if (secao === "ideias") ideias = null; rerender(); scrollTo(0, 0); },
+  // troca o tipo sem redesenhar (o texto já digitado continua no campo)
+  "aj-tipo-ideia": (b) => {
+    tipoIdeia = b.dataset.v;
+    for (const c of b.parentNode.children) { const on = c === b; c.classList.toggle("on", on); c.setAttribute("aria-checked", on); }
+    const t = b.closest("form").texto;
+    t.placeholder = tipoIdeia === "ideia" ? "O que deixaria a Mesa melhor?" : "O que aconteceu? Em qual tela?";
+    t.setAttribute("aria-label", `Sua ${tipoIdeia}`);
+  },
   "aj-menu": () => { secao = null; editando = false; rerender(); },
   "aj-ativar": async () => { toast(await ativarPush()); proximos = null; rerender(); },
   "aj-testar": async (b) => { b.disabled = true; try { await testarAviso(); toast("Enviado — chega em segundos"); } catch (e) { toast("Falhou: " + e.message); } b.disabled = false; },
@@ -301,6 +326,18 @@ export const forms = {
     if (!text) return toast("Escreva o lembrete");
     if (!days.length) return toast("Escolha ao menos um dia");
     salvar({ reminders: [...(S.cfg?.reminders || []), { id: Math.random().toString(36).slice(2, 10), text: text.slice(0, 120), time: f.hora.value || "08:00", days }] });
+  },
+  ideia: async (f) => {
+    const texto = f.texto.value.trim();
+    if (!texto) return toast("Escreva a ideia ou o problema");
+    const b = f.querySelector("button[type=submit]");
+    b.disabled = true;
+    try {
+      const x = await api("/api/ideias", { method: "POST", body: JSON.stringify({ tipo: tipoIdeia, texto, pessoa: S.pessoa, aparelho: S.cfg?.name || "" }) });
+      ideias = [x, ...(ideias || [])];
+      toast("Enviado — obrigado! O Claude vê pelo conector.");
+      rerender();
+    } catch (e) { b.disabled = false; toast("Não consegui enviar (sem internet?)"); }
   },
 };
 

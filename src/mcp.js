@@ -13,7 +13,8 @@ Para montar o plano novo:
 4. publicar_rascunho com so_validar=true, mostre o resumo ao Rafael e só publique (so_validar=false) depois que ele confirmar.
 Ao publicar, os celulares da família são avisados na hora.
 Para analisar a semana (ou o tratamento): contexto_da_familia (fechamentosDoDia, fechamentosDaSemana, tratamentos, dosesTomadas, analisesAnteriores),
-depois gravar_analise com so_validar=true; mostre o texto ao Rafael e grave (so_validar=false) depois que ele confirmar — a análise aparece no Diário do app.`;
+depois gravar_analise com so_validar=true; mostre o texto ao Rafael e grave (so_validar=false) depois que ele confirmar — a análise aparece no Diário do app.
+Ideias e problemas que a família escreveu sobre o app: ideias_do_app; para responder, responder_ideia com so_validar=true e grave depois do "sim" do Rafael.`;
 
 export const REGRAS = `Formato "plano-familia/2" (JSON). Regras:
 - Tratamento (fora do plano, cadastrado no app por pessoa): no contexto vem em "tratamentos" (nome, início, dias, doses com "quando" = refeição ou HH:MM), "dosesTomadas" e "efeitosColaterais". O "diarioDeSintomas" traz {tipo, intensidade, hora, texto} (registros antigos: {texto, nivel}); tipos sangue/peso/febre/dornoite são sinais de alerta. Use isso para ajustar a dieta e, se for o caso, sugerir estender, parar ou começar a reintrodução — sem prescrever remédio.

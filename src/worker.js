@@ -415,6 +415,23 @@ ${JSON.stringify(exemploDoFormato())}` },
         await gravarChave(env, `analises:${a.pessoa}`, JSON.stringify([analise, ...lista].slice(0, 30)));
         return { gravado: true, ...analise };
       } },
+    { name: "ideias_do_app", title: "Ideias e feedbacks do app",
+      description: "Ideias e problemas que a família escreveu em Ajustes → Ideias e feedback (mais nova primeiro): id, data, pessoa, aparelho, tipo (ideia|problema), texto, status (nova|vista|feita|nao_vai) e a resposta, se houver.",
+      inputSchema: { type: "object", properties: { so_abertas: { type: "boolean", description: "Só as que ainda não foram feitas nem descartadas." } } },
+      annotations: leitura, run: async (a) => (await lerIdeias(env)).filter((x) => !a.so_abertas || x.status === "nova" || x.status === "vista") },
+    { name: "responder_ideia", title: "Responder uma ideia do app",
+      description: "Grava uma resposta curta e o status (vista|feita|nao_vai) numa ideia; a família vê em Ajustes → Ideias e feedback. Com so_validar=true só confere; grave (so_validar=false) depois que o Rafael confirmar.",
+      inputSchema: { type: "object", properties: { id: { type: "string" }, status: { type: "string", enum: STATUS_IDEIA.slice(1) }, resposta: { type: "string" }, so_validar: { type: "boolean" } }, required: ["id", "status", "so_validar"] },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      run: async (a) => {
+        const lista = await lerIdeias(env), x = lista.find((y) => y.id === a.id);
+        if (!x) throw new Error("Ideia não encontrada: veja os ids em ideias_do_app.");
+        if (!STATUS_IDEIA.slice(1).includes(a.status)) throw new Error("status: vista, feita ou nao_vai.");
+        const nova = { ...x, status: a.status, ...(a.resposta ? { resposta: cleanStr(String(a.resposta).trim(), 600) } : {}) };
+        if (a.so_validar !== false) return { valido: true, vaiGravar: nova };
+        await gravarChave(env, "ideias", JSON.stringify(lista.map((y) => (y.id === x.id ? nova : y))));
+        return { gravado: true, ...nova };
+      } },
   ];
 }
 
@@ -609,6 +626,17 @@ async function rotas(req, env, ctx, url, n) {
     x.lida = true;
     await gravarChave(env, `analises:${anl[1]}`, JSON.stringify(lista));
     return json({ ok: true });
+  }
+  // ideias e feedbacks sobre o app (Ajustes → Ideias e feedback); o Claude lê e responde pelo conector
+  if (path === "/api/ideias" && method === "GET") return json(await lerIdeias(env));
+  if (path === "/api/ideias" && method === "POST") {
+    const b = (await req.json().catch(() => null)) || {};
+    const texto = cleanStr(String(b.texto || "").trim(), 1000);
+    if (!texto) return json({ error: "Escreva a ideia ou o problema" }, 400);
+    const ideia = { id: idAnalise(), data: localDate(Date.now(), tzOf(env)), pessoa: cleanStr(b.pessoa, 24), aparelho: cleanStr(b.aparelho, 40),
+      tipo: b.tipo === "problema" ? "problema" : "ideia", texto, status: "nova" };
+    await gravarChave(env, "ideias", JSON.stringify([ideia, ...(await lerIdeias(env))].slice(0, 200)));
+    return json(ideia);
   }
   const trat = path.match(/^\/api\/tratamento\/([\w-]{1,24})$/);
   if (trat && method === "GET") return json(cfgTratamento(JSON.parse((await lerChave(env, `tratamento:${trat[1]}`)) || "null")));
@@ -813,6 +841,12 @@ async function perguntas(env, aparelhos, sched, quando) {
 
 /** Id de análise: o tempo + um pedaço aleatório (duas no mesmo milissegundo não colidem). */
 const idAnalise = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/** Ideias e feedbacks do app (mais nova primeiro). */
+async function lerIdeias(env) {
+  try { const l = JSON.parse((await lerChave(env, "ideias")) || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+}
+const STATUS_IDEIA = ["nova", "vista", "feita", "nao_vai"];
 
 /** Análises do Claude gravadas para a pessoa (mais nova primeiro). */
 async function lerAnalises(env, pid) {

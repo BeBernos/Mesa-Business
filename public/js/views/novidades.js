@@ -3,6 +3,13 @@
 
 export const NOVIDADES = [
   {
+    versao: "3.0.4", data: "2026-11-27", titulo: "Treino e ideias",
+    itens: [
+      "**Treinou hoje?** Agora a resposta vale de verdade: “Sim” tira o cartão da Hoje (com Desfazer) e “Não” deixa só a orientação do plano para o dia sem treino.",
+      "**Ideias e feedback** (Ajustes): mande uma ideia ou um problema da Mesa. Fica guardado para a família, o Claude lê pelo conector e a resposta aparece ali mesmo.",
+    ],
+  },
+  {
     versao: "3.0.3", data: "2026-11-26", titulo: "Quatro anéis",
     itens: ["**Carbo e gordura nos anéis:** além de calorias e proteína, a Hoje mostra um anel para o carbo (amarelo) e outro para a gordura (lilás), nas mesmas cores das linhas embaixo."],
   },
